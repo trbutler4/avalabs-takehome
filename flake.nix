@@ -17,7 +17,6 @@
             nodejs_22
             nodePackages.typescript
             nodePackages.typescript-language-server
-            typescript-go
             yarn
             postgresql_16
           ];

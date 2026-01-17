@@ -8,6 +8,7 @@
     "typecheck": "yarn workspaces foreach -A run typecheck"
   },
   "devDependencies": {
+    "@aspect-build/typescript-go": "^0.0.0-20250127180753-0aae3eb8e4c5",
     "concurrently": "^8.2.2",
     "typescript": "^5.7.3"
   },
