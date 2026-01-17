@@ -17,7 +17,8 @@
             nodejs_22
             nodePackages.typescript
             nodePackages.typescript-language-server
-            yarn
+            corepack
+
             postgresql_16
           ];
         };
