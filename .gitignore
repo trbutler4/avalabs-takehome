@@ -7,9 +7,6 @@ dist/
 # Vite
 frontend/dist/
 
-# Proto generated files
-proto/gen/
-
 # IDE
 .idea/
 .vscode/
