@@ -1,20 +1,17 @@
 services:
   frontend:
-    build:
-      context: ./frontend
+    build: ./frontend
     ports:
-      - "8080:80"
+      - "4173:4173"
     depends_on:
       - backend
 
   backend:
-    build:
-      context: ./backend
+    build: ./backend
     ports:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/avalabs
-      - PORT=3000
     depends_on:
       db:
         condition: service_healthy

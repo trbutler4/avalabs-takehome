@@ -4,7 +4,7 @@ Full-stack app with React frontend and Node.js backend.
 
 ## Stack
 
-- **Frontend**: React, TypeScript, Vite, Tailwind, shadcn/ui
+- **Frontend**: React, TypeScript, Vite, Tailwind
 - **Backend**: Node.js, TypeScript, tRPC, Zod
 - **Database**: PostgreSQL
 
@@ -24,6 +24,6 @@ yarn dev        # Start frontend + backend
 docker compose up --build
 ```
 
-- Frontend: http://localhost:8080
+- Frontend: http://localhost:4173
 - Backend: http://localhost:3000
 - PostgreSQL: localhost:5432
