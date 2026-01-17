@@ -1,0 +1,28 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+
+# Vite
+frontend/dist/
+
+# Proto generated files
+proto/gen/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

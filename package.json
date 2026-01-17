@@ -1,0 +1,15 @@
+{
+  "name": "avalabs-takehome",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev": "concurrently \"yarn workspace backend dev\" \"yarn workspace frontend dev\"",
+    "build": "yarn workspace backend build && yarn workspace frontend build",
+    "typecheck": "yarn workspaces foreach -A run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "yarn@4.6.0"
+}
