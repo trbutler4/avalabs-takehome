@@ -13,7 +13,7 @@ Full-stack app with React frontend and Node.js backend.
 ## Development
 
 ```bash
-nix develop     # Enter dev shell
+nix develop     # Enter dev shell (if you don't use nix, try it out!)
 yarn install    # Install deps
 yarn dev        # Start frontend + backend
 ```
