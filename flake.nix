@@ -1,5 +1,5 @@
 {
-  description = "Node.js backend + React frontend demo application";
+  description = "Ava Labs Fullstack Takehome";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -16,15 +16,10 @@
           buildInputs = with pkgs; [
             nodejs_22
             nodePackages.typescript
-            vtsls
+            nodePackages.typescript-language-server
+            typescript-go
             yarn
           ];
-
-          shellHook = ''
-            echo "Node.js $(node --version)"
-            echo "Yarn $(yarn --version)"
-            echo "TypeScript $(tsc --version)"
-          '';
         };
       }
     );
