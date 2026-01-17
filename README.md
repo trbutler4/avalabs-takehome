@@ -12,6 +12,8 @@ Full-stack app with React frontend and Node.js backend.
 
 > **Note**: I typically prefer protobuf + ConnectRPC for API contracts due to language-agnostic design and explicit schema documentation. Used tRPC here to match the preferred stack and learn the tool.
 
+> **Note**: Using Yarn PnP (Plug'n'Play) with standard `tsc` for typechecking. While `tsgo` is faster, it doesn't support Yarn PnP's module resolution. Chose PnP to try Yarn's modern approach, accepting the tradeoff since tsgo is still in development and not technically ready for production, even though type checking is ready.
+
 ## Development
 
 ```bash

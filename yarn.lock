@@ -1646,6 +1646,7 @@ __metadata:
     "@trpc/client": "npm:^11.0.0-rc.682"
     "@trpc/react-query": "npm:^11.0.0-rc.682"
     "@trpc/server": "npm:^11.0.0-rc.682"
+    "@types/node": "npm:^22.10.5"
     "@types/react": "npm:^19.0.2"
     "@types/react-dom": "npm:^19.0.2"
     "@vitejs/plugin-react": "npm:^4.3.4"
