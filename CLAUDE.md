@@ -12,13 +12,9 @@ Asset Registry Service - a fullstack TypeScript application that displays crypto
 # Development
 nix develop              # Enter reproducible dev shell (Node.js 22, PostgreSQL 16)
 yarn install             # Install all workspace dependencies
-yarn dev                 # Run frontend + backend concurrently (main dev command)
+yarn dev                 # Run frontend + backend via Turbo (main dev command)
 yarn build               # Build both workspaces
-yarn typecheck           # TypeScript checking across all workspaces
-
-# Individual workspaces
-yarn workspace frontend dev      # Vite dev server only
-yarn workspace backend dev       # Backend with tsx watch only
+yarn typecheck           # TypeScript checking via tsgo
 
 # Docker
 docker compose up --build        # Full stack: frontend:4173, backend:3000, postgres:5432
@@ -26,7 +22,7 @@ docker compose up --build        # Full stack: frontend:4173, backend:3000, post
 
 ## Architecture
 
-**Monorepo Structure** using Yarn Workspaces:
+**Monorepo Structure** using Yarn Workspaces + Turborepo:
 - `frontend/` - React 19 + Vite + Tailwind + tRPC client
 - `backend/` - Node.js + tRPC server + Zod validation + PostgreSQL
 

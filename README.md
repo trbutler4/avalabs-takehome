@@ -2,6 +2,8 @@
 
 Full-stack app with React frontend and Node.js backend.
 
+> **Monorepo**: Uses [Turborepo](https://turbo.build) for simple monorepo task orchestration.
+
 ## Stack
 
 - **Frontend**: React, TypeScript, Vite, Tailwind
