@@ -1,0 +1,49 @@
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+export interface Network {
+  id: string
+  chain_id: number
+  name: string
+  native_coin_id: string
+}
+
+export interface Token {
+  id: string
+  symbol: string
+  name: string
+  contract_address: string | null
+  network_id: string
+  balance?: string
+}
+
+export interface TokensResponse {
+  tokens: Token[]
+  total: number
+}
+
+export interface TokensQuery {
+  networkId?: string
+  search?: string
+  wallet?: string
+  page?: number
+  limit?: number
+}
+
+export async function fetchNetworks(): Promise<Network[]> {
+  const res = await fetch(`${API_URL}/networks`)
+  if (!res.ok) throw new Error('Failed to fetch networks')
+  return res.json()
+}
+
+export async function fetchTokens(query: TokensQuery): Promise<TokensResponse> {
+  const params = new URLSearchParams()
+  if (query.networkId) params.set('networkId', query.networkId)
+  if (query.search) params.set('search', query.search)
+  if (query.wallet) params.set('wallet', query.wallet)
+  if (query.page) params.set('page', query.page.toString())
+  if (query.limit) params.set('limit', query.limit.toString())
+
+  const res = await fetch(`${API_URL}/tokens?${params}`)
+  if (!res.ok) throw new Error('Failed to fetch tokens')
+  return res.json()
+}

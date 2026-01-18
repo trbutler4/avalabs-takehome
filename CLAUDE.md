@@ -10,36 +10,42 @@ Asset Registry Service - a fullstack TypeScript application that displays crypto
 
 ```bash
 # Development
-nix develop              # Enter reproducible dev shell (Node.js 22, PostgreSQL 16)
-yarn install             # Install all workspace dependencies
-yarn dev                 # Run frontend + backend via Turbo (main dev command)
-yarn build               # Build both workspaces
-yarn typecheck           # TypeScript checking via tsgo
+nix develop              # Enter reproducible dev shell (Node.js 24, PostgreSQL 18)
+docker compose up -d     # Start PostgreSQL
+npm install              # Install all workspace dependencies
+npm run migrate -w backend  # Run database migrations
+npm run dev              # Run frontend + backend via Turbo (main dev command)
+npm run build            # Build both workspaces
+npm run typecheck        # TypeScript checking
 
-# Docker
-docker compose up --build        # Full stack: frontend:4173, backend:3000, postgres:5432
+# Docker (backend only - frontend deploys to CDN in production)
+docker build -f backend/Dockerfile -t backend .
 ```
 
 ## Architecture
 
-**Monorepo Structure** using Yarn Workspaces + Turborepo:
-- `frontend/` - React 19 + Vite + Tailwind + tRPC client
-- `backend/` - Node.js + tRPC server + Zod validation + PostgreSQL
+**Monorepo Structure** using npm Workspaces + Turborepo:
+- `frontend/` - React 19 + Vite + Tailwind + React Query
+- `backend/` - Node.js + Express + Zod + OpenAPI + PostgreSQL
 
-**tRPC Integration**: The frontend imports `AppRouter` type from backend for end-to-end type safety. Client setup in `frontend/src/trpc.ts`, router definition in `backend/src/router.ts`.
+**REST API with OpenAPI**: The backend exposes a REST API with auto-generated OpenAPI documentation at `/docs`. Frontend uses React Query with typed fetch functions.
 
 **Key Files**:
-- `backend/src/router.ts` - tRPC procedure definitions (API endpoints)
-- `backend/src/index.ts` - HTTP server setup with CORS
-- `frontend/src/main.tsx` - React entry with tRPC/React Query providers
+- `backend/src/routes.ts` - REST route definitions with JSDoc OpenAPI annotations
+- `backend/src/index.ts` - Express server setup with Swagger UI
+- `backend/src/migrate.ts` - Database migration runner
+- `backend/migrations/` - SQL migration files (001_*.sql, 002_*.sql, etc.)
+- `frontend/src/api.ts` - Typed API client (fetch + types)
+- `frontend/src/main.tsx` - React entry with React Query provider
 - `frontend/src/App.tsx` - Main UI component
 
 ## Tech Decisions
 
-- tRPC 11 RC for type-safe APIs (author notes preference for protobuf+ConnectRPC in production)
-- Zod for runtime validation on backend
-- React Query via tRPC integration for server state
-- PostgreSQL via `postgres` driver (not an ORM)
+- REST + OpenAPI for language-agnostic API contract (see README for rationale)
+- Express with swagger-jsdoc for OpenAPI spec generation
+- Zod for runtime validation
+- React Query for server state management
+- PostgreSQL via `pg` (node-postgres) driver (not an ORM)
 
 ## Current Status
 

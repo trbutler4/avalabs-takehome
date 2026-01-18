@@ -9,13 +9,10 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.16",
-    "@trpc/client": "^11.0.0-rc.682",
-    "@trpc/react-query": "^11.0.0-rc.682",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@trpc/server": "^11.0.0-rc.682",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

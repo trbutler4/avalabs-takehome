@@ -1,21 +1,36 @@
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+# Copy root package files and workspace package.jsons for dependency resolution
+COPY package.json package-lock.json ./
+COPY frontend/package.json ./frontend/
+COPY backend/package.json ./backend/
 
-COPY . .
-RUN yarn build
+# Install backend workspace dependencies
+RUN npm ci --workspace=backend
 
-FROM node:22-alpine
+# Copy backend source
+COPY backend/ ./backend/
+
+# Build
+WORKDIR /app/backend
+RUN npm run build
+
+# Production stage
+FROM node:24-alpine
 
 WORKDIR /app
 
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --production
+COPY package.json package-lock.json ./
+COPY frontend/package.json ./frontend/
+COPY backend/package.json ./backend/
 
-COPY --from=builder /app/dist ./dist
+RUN npm ci --workspace=backend --omit=dev
+
+COPY --from=builder /app/backend/dist ./backend/dist
+
+WORKDIR /app/backend
 
 EXPOSE 3000
 

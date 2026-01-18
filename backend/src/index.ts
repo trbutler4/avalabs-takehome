@@ -1,30 +1,49 @@
-import { createHTTPServer } from '@trpc/server/adapters/standalone'
+import express from 'express'
 import cors from 'cors'
-import { appRouter } from './router.js'
-import { initDb } from './db.js'
+import swaggerJsdoc from 'swagger-jsdoc'
+import swaggerUi from 'swagger-ui-express'
+import { pool } from './db.js'
 import { sync } from './coingecko.js'
+import { registerRoutes } from './routes.js'
 
 const PORT = Number(process.env.PORT ?? 3000)
 
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Asset Registry API',
+      version: '1.0.0',
+      description: 'API for crypto networks and tokens data',
+    },
+  },
+  apis: ['./src/routes.ts'],
+})
+
 async function main() {
-  await initDb()
-  console.log('Database initialized')
+  const app = express()
+
+  app.use(cors())
+  app.use(express.json())
+
+  // OpenAPI docs
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+  app.get('/openapi.json', (_req, res) => res.json(swaggerSpec))
+
+  // Routes
+  registerRoutes(app)
 
   // Sync on startup if DB is empty
-  const { sql } = await import('./db.js')
-  const [{ count }] = await sql`SELECT COUNT(*) as count FROM networks`
-  if (Number(count) === 0) {
+  const { rows } = await pool.query('SELECT COUNT(*) as count FROM networks')
+  if (Number(rows[0].count) === 0) {
     console.log('Database empty, running initial sync...')
     await sync()
   }
 
-  const server = createHTTPServer({
-    middleware: cors(),
-    router: appRouter,
+  app.listen(PORT, () => {
+    console.log(`Server listening on http://localhost:${PORT}`)
+    console.log(`OpenAPI docs at http://localhost:${PORT}/docs`)
   })
-
-  server.listen(PORT)
-  console.log(`Server listening on http://localhost:${PORT}`)
 }
 
 main().catch(console.error)

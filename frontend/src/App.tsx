@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { trpc } from './trpc'
+import { useQuery } from '@tanstack/react-query'
+import { fetchNetworks, fetchTokens } from './api'
 
 export default function App() {
   const [selectedNetwork, setSelectedNetwork] = useState<string>('')
@@ -7,13 +8,20 @@ export default function App() {
   const [wallet, setWallet] = useState('')
   const [page, setPage] = useState(1)
 
-  const { data: networks } = trpc.networks.useQuery()
-  const { data: tokensData, isLoading } = trpc.tokens.useQuery({
-    networkId: selectedNetwork || undefined,
-    search: search || undefined,
-    wallet: wallet || undefined,
-    page,
-    limit: 50,
+  const { data: networks } = useQuery({
+    queryKey: ['networks'],
+    queryFn: fetchNetworks,
+  })
+
+  const { data: tokensData, isLoading } = useQuery({
+    queryKey: ['tokens', selectedNetwork, search, wallet, page],
+    queryFn: () => fetchTokens({
+      networkId: selectedNetwork || undefined,
+      search: search || undefined,
+      wallet: wallet || undefined,
+      page,
+      limit: 50,
+    }),
   })
 
   return (
@@ -89,7 +97,7 @@ export default function App() {
                   </td>
                   {wallet && (
                     <td className="py-2 font-mono">
-                      {(token as any).balance ?? '-'}
+                      {token.balance ?? '-'}
                     </td>
                   )}
                 </tr>

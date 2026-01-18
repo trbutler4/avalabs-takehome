@@ -1,23 +1,6 @@
 services:
-  frontend:
-    build: ./frontend
-    ports:
-      - "4173:4173"
-    depends_on:
-      - backend
-
-  backend:
-    build: ./backend
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/avalabs
-    depends_on:
-      db:
-        condition: service_healthy
-
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres

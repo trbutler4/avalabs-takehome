@@ -1,4 +1,4 @@
-import { sql } from './db.js'
+import { pool } from './db.js'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
 
@@ -33,15 +33,16 @@ export async function syncNetworks() {
 
   for (const p of platforms) {
     if (!p.id) continue
-    await sql`
-      INSERT INTO networks (id, chain_id, name, native_coin_id, synced_at)
-      VALUES (${p.id}, ${p.chain_identifier}, ${p.name}, ${p.native_coin_id}, NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        chain_id = EXCLUDED.chain_id,
-        name = EXCLUDED.name,
-        native_coin_id = EXCLUDED.native_coin_id,
-        synced_at = NOW()
-    `
+    await pool.query(
+      `INSERT INTO networks (id, chain_id, name, native_coin_id, synced_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (id) DO UPDATE SET
+         chain_id = EXCLUDED.chain_id,
+         name = EXCLUDED.name,
+         native_coin_id = EXCLUDED.native_coin_id,
+         synced_at = NOW()`,
+      [p.id, p.chain_identifier, p.name, p.native_coin_id]
+    )
   }
   console.log(`Synced ${platforms.length} networks`)
 }
@@ -58,18 +59,19 @@ export async function syncTokens() {
       if (!contractAddress) continue
 
       // Check if network exists
-      const [network] = await sql`SELECT id FROM networks WHERE id = ${networkId}`
-      if (!network) continue
+      const { rows } = await pool.query('SELECT id FROM networks WHERE id = $1', [networkId])
+      if (rows.length === 0) continue
 
-      await sql`
-        INSERT INTO tokens (id, network_id, symbol, name, contract_address, synced_at)
-        VALUES (${coin.id}, ${networkId}, ${coin.symbol}, ${coin.name}, ${contractAddress as string}, NOW())
-        ON CONFLICT (id, network_id) DO UPDATE SET
-          symbol = EXCLUDED.symbol,
-          name = EXCLUDED.name,
-          contract_address = EXCLUDED.contract_address,
-          synced_at = NOW()
-      `
+      await pool.query(
+        `INSERT INTO tokens (id, network_id, symbol, name, contract_address, synced_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         ON CONFLICT (id, network_id) DO UPDATE SET
+           symbol = EXCLUDED.symbol,
+           name = EXCLUDED.name,
+           contract_address = EXCLUDED.contract_address,
+           synced_at = NOW()`,
+        [coin.id, networkId, coin.symbol, coin.name, contractAddress as string]
+      )
       count++
     }
   }
