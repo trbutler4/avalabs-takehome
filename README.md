@@ -24,6 +24,10 @@ This service exposes a REST API with an OpenAPI specification. The decision cons
 
 This service uses the `pg` driver directly with raw SQL instead of an ORM like Prisma or Drizzle. The schema is simple (2 tables, 1 foreign key) and the queries are straightforward SELECTs and UPSERTs. An ORM would add dependency weight (~15MB for Prisma), require a code generation step in the build, and abstract away queries that are already easy to read. Raw SQL keeps the codebase simple and the Docker image small.
 
+## Package Manger Decision
+
+Which package manager to use is generally very team dependent, and mostly preference based. I just want to avoid any additional complexity here, so simply using npm. 
+
 ## Local Development
 
 ```bash
