@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,12 +29,24 @@ function isValidWalletAddress(address: string): boolean {
   return EVM_ADDRESS_REGEX.test(address) || SOLANA_ADDRESS_REGEX.test(address)
 }
 
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+
+  return debouncedValue
+}
+
 export default function App() {
   const [selectedNetwork, setSelectedNetwork] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [wallet, setWallet] = useState('')
   const [page, setPage] = useState(1)
 
+  const debouncedSearch = useDebouncedValue(search, 200)
   const walletIsValid = isValidWalletAddress(wallet)
 
   const { data: networks } = useQuery({
@@ -43,10 +55,10 @@ export default function App() {
   })
 
   const { data: tokensData, isLoading } = useQuery({
-    queryKey: ['tokens', selectedNetwork, search, wallet, page],
+    queryKey: ['tokens', selectedNetwork, debouncedSearch, wallet, page],
     queryFn: () => fetchTokens({
       network_id: selectedNetwork === 'all' ? undefined : selectedNetwork,
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       wallet: wallet || undefined,
       page,
       limit: 50,
