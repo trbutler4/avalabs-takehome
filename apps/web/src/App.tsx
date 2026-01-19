@@ -20,7 +20,7 @@ import {
 import { fetchNetworks, fetchTokens } from './api'
 
 export default function App() {
-  const [selectedNetwork, setSelectedNetwork] = useState<string>('')
+  const [selectedNetwork, setSelectedNetwork] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [wallet, setWallet] = useState('')
   const [page, setPage] = useState(1)
@@ -33,7 +33,7 @@ export default function App() {
   const { data: tokensData, isLoading } = useQuery({
     queryKey: ['tokens', selectedNetwork, search, wallet, page],
     queryFn: () => fetchTokens({
-      network_id: selectedNetwork || undefined,
+      network_id: selectedNetwork === 'all' ? undefined : selectedNetwork,
       search: search || undefined,
       wallet: wallet || undefined,
       page,
@@ -48,9 +48,9 @@ export default function App() {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex gap-4">
           <Select
-            value={selectedNetwork || undefined}
+            value={selectedNetwork}
             onValueChange={(value) => {
-              setSelectedNetwork(value === 'all' ? '' : value)
+              setSelectedNetwork(value)
               setPage(1)
             }}
           >
