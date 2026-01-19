@@ -1,7 +1,7 @@
-import { Express, Request, Response } from 'express'
+import type { Express, Request, Response } from 'express'
 import { pool } from './db.js'
-import { getTokenBalances, getAllTokenBalances } from './alchemy'
-import { TokensQuerySchema, generateOpenAPIDocument } from './openapi'
+import { getTokenBalances, getAllTokenBalances } from './alchemy.js'
+import { TokensQuerySchema, generateOpenAPIDocument } from './openapi.js'
 
 // Types inferred from DB
 type Network = {

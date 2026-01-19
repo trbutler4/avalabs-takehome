@@ -4,11 +4,17 @@ Full-stack app with React frontend and Node.js backend.
 
 > **Monorepo**: Uses [Turborepo](https://turbo.build) for simple monorepo task orchestration.
 
-## Stack
 
-- **Frontend**: React, TypeScript, Vite, Tailwind
-- **Backend**: Node.js, TypeScript, Express, Zod, OpenAPI
-- **Database**: PostgreSQL
+
+## Local Development
+
+```bash
+nix develop              # Optional: reproducible dev environment (Node.js 24, PostgreSQL 18)
+docker compose up -d     # Start PostgreSQL
+npm install
+npm run migrate -w backend   # Run database migrations
+npm run dev              # Start frontend + backend with hot reload
+```
 
 ## API Design Decision
 
@@ -28,31 +34,11 @@ This service uses the `pg` driver directly with raw SQL instead of an ORM like P
 
 ## Package Manger Decision
 
-Which package manager to use is generally very team dependent, and mostly preference based. I just want to avoid any additional complexity here, so simply using npm. 
-
-## Local Development
-
-```bash
-nix develop              # Optional: reproducible dev environment (Node.js 24, PostgreSQL 18)
-docker compose up -d     # Start PostgreSQL
-npm install
-npm run migrate -w backend   # Run database migrations
-npm run dev              # Start frontend + backend with hot reload
-```
-
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000
-- PostgreSQL: localhost:5432
-
-## Database Migrations
-
-Migrations live in `backend/migrations/` as sequential SQL files (`001_*.sql`, `002_*.sql`, etc.).
+Which package manager to use is generally very team dependent, and mostly preference based. I just want to avoid any additional complexity here, so simply using npm.
 
 ```bash
 npm run migrate -w backend   # Apply pending migrations
 ```
-
-Migrations are tracked in a `schema_migrations` table and run transactionally. Each migration runs exactly once.
 
 ## Production Deployment
 
@@ -68,3 +54,4 @@ npm run build -w frontend
 ```
 
 **Database**: Use a managed PostgreSQL service (RDS, Cloud SQL, etc.)
+

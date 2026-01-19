@@ -1,7 +1,6 @@
 {
   "name": "backend",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "node --import tsx --watch src/index.ts",
