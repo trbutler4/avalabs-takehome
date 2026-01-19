@@ -30,31 +30,6 @@ interface Token {
 }
 
 export function registerRoutes(app: Express) {
-  /**
-   * @openapi
-   * /networks:
-   *   get:
-   *     summary: List all supported networks
-   *     tags: [Networks]
-   *     responses:
-   *       200:
-   *         description: List of networks
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 type: object
-   *                 properties:
-   *                   id:
-   *                     type: string
-   *                   chain_id:
-   *                     type: integer
-   *                   name:
-   *                     type: string
-   *                   native_coin_id:
-   *                     type: string
-   */
   app.get('/networks', async (_req: Request, res: Response) => {
     const { rows } = await pool.query<Network>(
       'SELECT id, chain_id, name, native_coin_id FROM networks ORDER BY name'
@@ -62,69 +37,6 @@ export function registerRoutes(app: Express) {
     res.json(rows)
   })
 
-  /**
-   * @openapi
-   * /tokens:
-   *   get:
-   *     summary: List tokens with filtering and pagination
-   *     tags: [Tokens]
-   *     parameters:
-   *       - in: query
-   *         name: networkId
-   *         schema:
-   *           type: string
-   *         description: Filter by network ID
-   *       - in: query
-   *         name: search
-   *         schema:
-   *           type: string
-   *         description: Search by symbol, name, or contract address
-   *       - in: query
-   *         name: wallet
-   *         schema:
-   *           type: string
-   *         description: Wallet address to fetch balances for
-   *       - in: query
-   *         name: page
-   *         schema:
-   *           type: integer
-   *           default: 1
-   *         description: Page number
-   *       - in: query
-   *         name: limit
-   *         schema:
-   *           type: integer
-   *           default: 50
-   *         description: Items per page
-   *     responses:
-   *       200:
-   *         description: Paginated list of tokens
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 tokens:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                       symbol:
-   *                         type: string
-   *                       name:
-   *                         type: string
-   *                       contract_address:
-   *                         type: string
-   *                         nullable: true
-   *                       network_id:
-   *                         type: string
-   *                       balance:
-   *                         type: string
-   *                 total:
-   *                   type: integer
-   */
   app.get('/tokens', async (req: Request, res: Response) => {
     const parsed = TokensQuerySchema.safeParse(req.query)
     if (!parsed.success) {

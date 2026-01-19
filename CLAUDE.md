@@ -26,13 +26,11 @@ docker build -f backend/Dockerfile -t backend .
 
 **Monorepo Structure** using npm Workspaces + Turborepo:
 - `frontend/` - React 19 + Vite + Tailwind + React Query
-- `backend/` - Node.js + Express + Zod + OpenAPI + PostgreSQL
-
-**REST API with OpenAPI**: The backend exposes a REST API with auto-generated OpenAPI documentation at `/docs`. Frontend uses React Query with typed fetch functions.
+- `backend/` - Node.js + Express + Zod + PostgreSQL
 
 **Key Files**:
-- `backend/src/routes.ts` - REST route definitions with JSDoc OpenAPI annotations
-- `backend/src/index.ts` - Express server setup with Swagger UI
+- `backend/src/routes.ts` - REST route definitions
+- `backend/src/index.ts` - Express server setup
 - `backend/src/migrate.ts` - Database migration runner
 - `backend/migrations/` - SQL migration files (001_*.sql, 002_*.sql, etc.)
 - `frontend/src/api.ts` - Typed API client (fetch + types)
@@ -41,8 +39,7 @@ docker build -f backend/Dockerfile -t backend .
 
 ## Tech Decisions
 
-- REST + OpenAPI for language-agnostic API contract (see README for rationale)
-- Express with swagger-jsdoc for OpenAPI spec generation
+- REST API with Express
 - Zod for runtime validation
 - React Query for server state management
 - PostgreSQL via `pg` (node-postgres) driver (not an ORM)

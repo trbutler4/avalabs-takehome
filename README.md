@@ -20,6 +20,8 @@ This service exposes a REST API with an OpenAPI specification. The decision cons
 
 3. **REST + OpenAPI** (chosen) - Universal compatibility. Any service in any language can consume the API using the OpenAPI spec to generate clients. Well-understood patterns, excellent tooling ecosystem, and easy to debug. The right level of complexity for the current requirements.
 
+> **Note**: OpenAPI documentation is not included in this implementation. For a production app, I'd add auto-generated docs using a library like `zod-to-openapi` to derive the spec from the existing Zod validation schemas. Omitted here as it's straightforward and not the focus of this exercise.
+
 ## Database Access Decision
 
 This service uses the `pg` driver directly with raw SQL instead of an ORM like Prisma or Drizzle. The schema is simple (2 tables, 1 foreign key) and the queries are straightforward SELECTs and UPSERTs. An ORM would add dependency weight (~15MB for Prisma), require a code generation step in the build, and abstract away queries that are already easy to read. Raw SQL keeps the codebase simple and the Docker image small.
