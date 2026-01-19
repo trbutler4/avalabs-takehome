@@ -12,7 +12,7 @@ Full-stack app with React frontend and Node.js backend.
 nix develop              # Optional: reproducible dev environment (Node.js 24, PostgreSQL 18)
 docker compose up -d     # Start PostgreSQL
 npm install
-npm run migrate -w backend   # Run database migrations
+npm run migrate -w @repo/api # Run database migrations
 npm run dev              # Start frontend + backend with hot reload
 ```
 
@@ -30,27 +30,29 @@ This service exposes a REST API with an OpenAPI specification. The decision cons
 
 ## Database Access Decision
 
-This service uses the `pg` driver directly with raw SQL instead of an ORM like Prisma or Drizzle. The schema is simple (2 tables, 1 foreign key) and the queries are straightforward SELECTs and UPSERTs. An ORM would add dependency weight (~15MB for Prisma), require a code generation step in the build, and abstract away queries that are already easy to read. Raw SQL keeps the codebase simple and the Docker image small.
+This service uses `pg-promise` with raw SQL instead of an ORM like Prisma or Drizzle. The schema is simple (2 tables, 1 foreign key) and the queries are straightforward SELECTs and UPSERTs. An ORM would add dependency weight (~15MB for Prisma), require a code generation step in the build, and abstract away queries that are already easy to read. Raw SQL keeps the codebase simple and the Docker image small.
+
+`pg-promise` is the [recommended PostgreSQL driver](https://expressjs.com/en/guide/database-integration.html#postgresql) in the Express documentation. It provides higher-level abstractions over the base `pg` driver—automatic connection pooling, transaction management (`BEGIN`/`COMMIT`/`ROLLBACK`), query formatting, and a promise-based API that eliminates manual connection acquisition and release.
 
 ## Package Manger Decision
 
 Which package manager to use is generally very team dependent, and mostly preference based. I just want to avoid any additional complexity here, so simply using npm.
 
 ```bash
-npm run migrate -w backend   # Apply pending migrations
+npm run migrate -w @repo/api # Apply pending migrations
 ```
 
 ## Production Deployment
 
-**Backend**: Dockerized for container orchestration (ECS, Cloud Run, Kubernetes)
+**API**: Dockerized for container orchestration (ECS, Cloud Run, Kubernetes)
 ```bash
-docker build -f backend/Dockerfile -t backend .
+docker build -f apps/api/Dockerfile -t api .
 ```
 
-**Frontend**: Static build deployed to CDN (Vercel, Cloudflare Pages, S3+CloudFront)
+**Web**: Static build deployed to CDN (Vercel, Cloudflare Pages, S3+CloudFront)
 ```bash
-npm run build -w frontend
-# Deploy frontend/dist to CDN
+npm run build -w @repo/web
+# Deploy apps/web/dist to CDN
 ```
 
 **Database**: Use a managed PostgreSQL service (RDS, Cloud SQL, etc.)

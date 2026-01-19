@@ -1,13 +1,11 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { pool } from './db.js'
+import { db } from './db.js'
 
 async function migrate() {
-  const client = await pool.connect()
-
   try {
     // Create tracking table
-    await client.query(`
+    await db.none(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         version INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
@@ -16,7 +14,7 @@ async function migrate() {
     `)
 
     // Get applied migrations
-    const { rows: applied } = await client.query<{ version: number }>(
+    const applied = await db.manyOrNone<{ version: number }>(
       'SELECT version FROM schema_migrations ORDER BY version'
     )
     const appliedVersions = new Set(applied.map(r => r.version))
@@ -46,25 +44,20 @@ async function migrate() {
 
       console.log(`Applying migration ${migration.version}_${migration.name}...`)
 
-      await client.query('BEGIN')
-      try {
-        await client.query(content)
-        await client.query(
+      await db.tx(async t => {
+        await t.none(content)
+        await t.none(
           'INSERT INTO schema_migrations (version, name) VALUES ($1, $2)',
           [migration.version, migration.name]
         )
-        await client.query('COMMIT')
-        console.log(`Applied migration ${migration.version}_${migration.name}`)
-      } catch (err) {
-        await client.query('ROLLBACK')
-        throw err
-      }
+      })
+
+      console.log(`Applied migration ${migration.version}_${migration.name}`)
     }
 
     console.log(`Applied ${migrations.length} migration(s)`)
   } finally {
-    client.release()
-    await pool.end()
+    await db.$pool.end()
   }
 }
 

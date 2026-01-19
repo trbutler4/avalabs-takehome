@@ -1,4 +1,4 @@
-import { pool } from './db.js'
+import { db } from './db.js'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
 
@@ -33,7 +33,7 @@ export async function syncNetworks() {
 
   for (const p of platforms) {
     if (!p.id) continue
-    await pool.query(
+    await db.none(
       `INSERT INTO networks (id, chain_id, name, native_coin_id, synced_at)
        VALUES ($1, $2, $3, $4, NOW())
        ON CONFLICT (id) DO UPDATE SET
@@ -59,10 +59,10 @@ export async function syncTokens() {
       if (!contractAddress) continue
 
       // Check if network exists
-      const { rows } = await pool.query('SELECT id FROM networks WHERE id = $1', [networkId])
-      if (rows.length === 0) continue
+      const network = await db.oneOrNone('SELECT id FROM networks WHERE id = $1', [networkId])
+      if (!network) continue
 
-      await pool.query(
+      await db.none(
         `INSERT INTO tokens (id, network_id, symbol, name, contract_address, synced_at)
          VALUES ($1, $2, $3, $4, $5, NOW())
          ON CONFLICT (id, network_id) DO UPDATE SET

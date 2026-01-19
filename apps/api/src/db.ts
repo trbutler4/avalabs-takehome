@@ -1,7 +1,7 @@
-import pg from 'pg'
+import pgPromise from 'pg-promise'
 
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/avalabs'
 
-export const pool = new pg.Pool({
-  connectionString: DATABASE_URL,
-})
+const pgp = pgPromise()
+
+export const db = pgp(DATABASE_URL)

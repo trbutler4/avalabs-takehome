@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import type { Token } from '@repo/shared'
-import { pool } from '../db.js'
+import { db } from '../db.js'
 import { getTokenBalances, getAllTokenBalances } from '../alchemy.js'
 import { TokensQuerySchema } from '../openapi.js'
 
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
 
     for (const [netId, netBalances] of balancesByNetwork) {
       const addresses = netBalances.map(b => b.contractAddress)
-      const { rows } = await pool.query<Token>(
+      const rows = await db.manyOrNone<Token>(
         `SELECT t.id, t.symbol, t.name, t.contract_address, t.network_id
          FROM tokens t
          WHERE t.network_id = $1
@@ -90,7 +90,7 @@ router.get('/', async (req, res) => {
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-  const { rows: tokens } = await pool.query<Token>(
+  const tokens = await db.manyOrNone<Token>(
     `SELECT id, symbol, name, contract_address, network_id
      FROM tokens
      ${where}
@@ -99,12 +99,12 @@ router.get('/', async (req, res) => {
     [...params, limit, offset]
   )
 
-  const { rows: countRows } = await pool.query(
+  const { count } = await db.one<{ count: string }>(
     `SELECT COUNT(*) as count FROM tokens ${where}`,
     params
   )
 
-  res.json({ tokens, total: Number(countRows[0].count) })
+  res.json({ tokens, total: Number(count) })
 })
 
 export default router

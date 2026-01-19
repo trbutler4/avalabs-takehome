@@ -1,13 +1,13 @@
 import app from './app.js'
-import { pool } from './db.js'
+import { db } from './db.js'
 import { sync } from './coingecko.js'
 
 const PORT = Number(process.env.PORT ?? 3000)
 
 async function main() {
   // Sync on startup if DB is empty
-  const { rows } = await pool.query('SELECT COUNT(*) as count FROM networks')
-  if (Number(rows[0].count) === 0) {
+  const { count } = await db.one<{ count: string }>('SELECT COUNT(*) as count FROM networks')
+  if (Number(count) === 0) {
     console.log('Database empty, running initial sync...')
     await sync()
   }
@@ -20,7 +20,7 @@ async function main() {
     console.log('\nShutting down...')
     server.closeAllConnections()
     server.close(() => {
-      pool.end().then(() => process.exit(0))
+      db.$pool.end().then(() => process.exit(0))
     })
   }
 
