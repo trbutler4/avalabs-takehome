@@ -48,6 +48,16 @@ This project uses [shadcn/ui](https://ui.shadcn.com) components, which are built
 
 **Note on scaling**: At larger scale with multiple frontend applications, the design system would typically be extracted into a standalone package (`packages/design-system`) with its own build step, Tailwind preset, and component exports. This allows shared components and consistent branding across apps. For brevity in this project, the components are implemented directly within the web app.
 
+## Network Support
+
+CoinGecko provides data for 400+ blockchain networks, but this service only syncs networks that have RPC provider support configured (via Alchemy). This is intentional:
+
+1. **Wallet balance queries require RPC access** - Without an RPC endpoint, we can't fetch token balances for a wallet on that network
+2. **Reduces data noise** - Most users care about major networks; syncing all 400+ would clutter the UI
+3. **Keeps the database lean** - Fewer networks means faster queries and smaller storage
+
+To add support for a new network, add its CoinGecko ID to Alchemy network mapping in `apps/api/src/alchemy.ts`. The next CoinGecko sync will automatically include that network and its tokens.
+
 ## Client State Management
 
 Since we really dont have much client state, and its all server state, i am simply omitting state management, since we have caching for API responses.

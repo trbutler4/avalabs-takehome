@@ -20,11 +20,22 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { fetchNetworks, fetchTokens } from './api'
 
+// Wallet address validation
+const EVM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+
+function isValidWalletAddress(address: string): boolean {
+  if (!address) return true // Empty is valid (no filter)
+  return EVM_ADDRESS_REGEX.test(address) || SOLANA_ADDRESS_REGEX.test(address)
+}
+
 export default function App() {
   const [selectedNetwork, setSelectedNetwork] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [wallet, setWallet] = useState('')
   const [page, setPage] = useState(1)
+
+  const walletIsValid = isValidWalletAddress(wallet)
 
   const { data: networks } = useQuery({
     queryKey: ['networks'],
@@ -40,14 +51,15 @@ export default function App() {
       page,
       limit: 50,
     }),
+    enabled: walletIsValid, // Don't fetch if wallet is invalid
   })
 
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="bg-primary text-primary-foreground py-4 px-6 mb-6">
-        <h1 className="text-2xl font-bold max-w-4xl mx-auto">Asset Registry</h1>
+        <h1 className="text-2xl font-bold w-3/4 max-w-6xl mx-auto">Asset Registry</h1>
       </header>
-      <main className="px-6 pb-6 max-w-4xl mx-auto">
+      <main className="px-6 pb-6 w-3/4 max-w-6xl mx-auto">
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Token Explorer</CardTitle>
@@ -83,15 +95,23 @@ export default function App() {
                 />
               </div>
 
-              <Input
-                type="text"
-                placeholder="Wallet address (0x...)"
-                value={wallet}
-                onChange={(e) => {
-                  setWallet(e.target.value)
-                  setPage(1)
-                }}
-              />
+              <div className="flex flex-col gap-1">
+                <Input
+                  type="text"
+                  placeholder="Wallet address (EVM: 0x... or Solana)"
+                  value={wallet}
+                  onChange={(e) => {
+                    setWallet(e.target.value)
+                    setPage(1)
+                  }}
+                  aria-invalid={!walletIsValid}
+                />
+                {!walletIsValid && (
+                  <p className="text-sm text-destructive">
+                    Invalid wallet address. Enter a valid EVM (0x...) or Solana address.
+                  </p>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>

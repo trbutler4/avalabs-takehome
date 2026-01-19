@@ -1,6 +1,10 @@
 import { db } from './db.js'
+import { getSupportedNetworkIds } from './alchemy.js'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
+
+// Only sync networks we have RPC support for
+const SUPPORTED_NETWORKS = new Set(getSupportedNetworkIds())
 
 // Rate limiter: max 30 requests per minute
 let requestCount = 0
@@ -31,8 +35,10 @@ export async function syncNetworks() {
   console.log('Syncing networks from CoinGecko...')
   const platforms = await rateLimitedFetch(`${COINGECKO_BASE}/asset_platforms`)
 
-  for (const p of platforms) {
-    if (!p.id) continue
+  // Filter to only networks we have RPC support for
+  const supportedPlatforms = platforms.filter((p: any) => p.id && SUPPORTED_NETWORKS.has(p.id))
+
+  for (const p of supportedPlatforms) {
     await db.none(
       `INSERT INTO networks (id, chain_id, name, native_coin_id, synced_at)
        VALUES ($1, $2, $3, $4, NOW())
@@ -44,7 +50,7 @@ export async function syncNetworks() {
       [p.id, p.chain_identifier, p.name, p.native_coin_id]
     )
   }
-  console.log(`Synced ${platforms.length} networks`)
+  console.log(`Synced ${supportedPlatforms.length} networks (filtered from ${platforms.length} total)`)
 }
 
 export async function syncTokens() {
@@ -58,9 +64,8 @@ export async function syncTokens() {
     for (const [networkId, contractAddress] of Object.entries(coin.platforms)) {
       if (!contractAddress) continue
 
-      // Check if network exists
-      const network = await db.oneOrNone('SELECT id FROM networks WHERE id = $1', [networkId])
-      if (!network) continue
+      // Skip networks we don't have RPC support for
+      if (!SUPPORTED_NETWORKS.has(networkId)) continue
 
       await db.none(
         `INSERT INTO tokens (id, network_id, symbol, name, contract_address, synced_at)
