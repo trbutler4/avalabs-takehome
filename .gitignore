@@ -4,9 +4,6 @@ dist/
 .env.local
 *.log
 
-# Vite
-frontend/dist/
-
 # IDE
 .idea/
 .vscode/
