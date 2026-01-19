@@ -12,6 +12,11 @@ const NETWORK_MAP: Record<string, string> = {
 export type TokenBalance = {
   contractAddress: string
   balance: string
+  networkId?: string
+}
+
+export function getSupportedNetworkIds(): string[] {
+  return Object.keys(NETWORK_MAP)
 }
 
 export async function getTokenBalances(networkId: string, walletAddress: string): Promise<TokenBalance[]> {
@@ -47,5 +52,14 @@ export async function getTokenBalances(networkId: string, walletAddress: string)
     .map((t: any) => ({
       contractAddress: t.contractAddress.toLowerCase(),
       balance: t.tokenBalance,
+      networkId,
     }))
+}
+
+export async function getAllTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
+  const networkIds = getSupportedNetworkIds()
+  const results = await Promise.all(
+    networkIds.map(networkId => getTokenBalances(networkId, walletAddress).catch(() => []))
+  )
+  return results.flat()
 }
