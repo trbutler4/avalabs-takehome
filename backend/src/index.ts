@@ -23,9 +23,20 @@ async function main() {
   }
 
   // Bind to all interfaces to allow access from other machines (e.g., via Tailscale)
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on http://0.0.0.0:${PORT}`)
   })
+
+  const shutdown = () => {
+    console.log('\nShutting down...')
+    server.closeAllConnections()
+    server.close(() => {
+      pool.end().then(() => process.exit(0))
+    })
+  }
+
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
 }
 
 main().catch(console.error)
