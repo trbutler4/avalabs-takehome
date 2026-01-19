@@ -22,8 +22,9 @@ async function main() {
     await sync()
   }
 
-  app.listen(PORT, () => {
-    console.log(`Server listening on http://localhost:${PORT}`)
+  // Bind to all interfaces to allow access from other machines (e.g., via Tailscale)
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server listening on http://0.0.0.0:${PORT}`)
   })
 }
 
