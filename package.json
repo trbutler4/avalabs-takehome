@@ -2,8 +2,7 @@
   "name": "avalabs-takehome",
   "private": true,
   "workspaces": [
-    "frontend",
-    "backend",
+    "apps/*",
     "packages/*"
   ],
   "scripts": {

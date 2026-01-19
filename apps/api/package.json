@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@repo/api",
   "private": true,
   "type": "module",
   "scripts": {
