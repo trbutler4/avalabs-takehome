@@ -1,24 +1,8 @@
 import type { Express, Request, Response } from 'express'
+import type { Network, Token } from '@repo/shared'
 import { pool } from './db.js'
 import { getTokenBalances, getAllTokenBalances } from './alchemy.js'
 import { TokensQuerySchema, generateOpenAPIDocument } from './openapi.js'
-
-// Types inferred from DB
-type Network = {
-  id: string
-  chain_id: number
-  name: string
-  native_coin_id: string
-}
-
-type Token = {
-  id: string
-  symbol: string
-  name: string
-  contract_address: string | null
-  network_id: string
-  balance?: string
-}
 
 export function registerRoutes(app: Express) {
   // OpenAPI spec endpoint

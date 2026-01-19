@@ -10,6 +10,7 @@
     "migrate": "tsx src/migrate.ts"
   },
   "dependencies": {
+    "@repo/shared": "*",
     "@asteasolutions/zod-to-openapi": "^8.4.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",

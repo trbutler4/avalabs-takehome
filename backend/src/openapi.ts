@@ -1,20 +1,27 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3, extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
 import { z } from 'zod'
+import {
+  NetworkSchema as BaseNetworkSchema,
+  TokenSchema as BaseTokenSchema,
+  TokensQuerySchema,
+} from '@repo/shared'
 
 extendZodWithOpenApi(z)
 
 export const registry = new OpenAPIRegistry()
 
-// Network schema
-export const NetworkSchema = z.object({
+// Re-export the query schema for use in routes
+export { TokensQuerySchema }
+
+// Extend base schemas with OpenAPI metadata
+export const NetworkSchema = BaseNetworkSchema.extend({
   id: z.string().openapi({ example: 'ethereum' }),
   chain_id: z.number().openapi({ example: 1 }),
   name: z.string().openapi({ example: 'Ethereum' }),
   native_coin_id: z.string().openapi({ example: 'ethereum' }),
 }).openapi('Network')
 
-// Token schema
-export const TokenSchema = z.object({
+export const TokenSchema = BaseTokenSchema.extend({
   id: z.string().openapi({ example: 'usd-coin' }),
   symbol: z.string().openapi({ example: 'USDC' }),
   name: z.string().openapi({ example: 'USD Coin' }),
@@ -23,16 +30,6 @@ export const TokenSchema = z.object({
   balance: z.string().optional().openapi({ example: '1000000000000000000' }),
 }).openapi('Token')
 
-// Query params schema
-export const TokensQuerySchema = z.object({
-  network_id: z.string().optional().openapi({ description: 'Filter tokens by network ID', example: 'ethereum' }),
-  search: z.string().optional().openapi({ description: 'Search tokens by address, symbol, or name', example: 'usdc' }),
-  wallet: z.string().optional().openapi({ description: 'Filter to tokens with non-zero balances for this wallet', example: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2' }),
-  page: z.coerce.number().default(1).openapi({ description: 'Page number', example: 1 }),
-  limit: z.coerce.number().default(50).openapi({ description: 'Items per page', example: 50 }),
-}).openapi('TokensQuery')
-
-// Response schemas
 export const TokensResponseSchema = z.object({
   tokens: z.array(TokenSchema),
   total: z.number().openapi({ example: 100 }),

@@ -1,25 +1,8 @@
+import type { Network, Token, TokensResponse } from '@repo/shared'
+
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
-export interface Network {
-  id: string
-  chain_id: number
-  name: string
-  native_coin_id: string
-}
-
-export interface Token {
-  id: string
-  symbol: string
-  name: string
-  contract_address: string | null
-  network_id: string
-  balance?: string
-}
-
-export interface TokensResponse {
-  tokens: Token[]
-  total: number
-}
+export type { Network, Token, TokensResponse }
 
 export interface TokensQuery {
   networkId?: string
