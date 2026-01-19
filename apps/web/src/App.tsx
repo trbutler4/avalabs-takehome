@@ -1,5 +1,22 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { fetchNetworks, fetchTokens } from './api'
 
 export default function App() {
@@ -16,7 +33,7 @@ export default function App() {
   const { data: tokensData, isLoading } = useQuery({
     queryKey: ['tokens', selectedNetwork, search, wallet, page],
     queryFn: () => fetchTokens({
-      networkId: selectedNetwork || undefined,
+      network_id: selectedNetwork || undefined,
       search: search || undefined,
       wallet: wallet || undefined,
       page,
@@ -30,24 +47,28 @@ export default function App() {
 
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex gap-4">
-          <select
-            className="border rounded px-3 py-2"
-            value={selectedNetwork}
-            onChange={(e) => {
-              setSelectedNetwork(e.target.value)
+          <Select
+            value={selectedNetwork || undefined}
+            onValueChange={(value) => {
+              setSelectedNetwork(value === 'all' ? '' : value)
               setPage(1)
             }}
           >
-            <option value="">All Networks</option>
-            {networks?.map((n) => (
-              <option key={n.id} value={n.id}>{n.name}</option>
-            ))}
-          </select>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Networks" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Networks</SelectItem>
+              {networks?.map((n) => (
+                <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <input
+          <Input
             type="text"
             placeholder="Search tokens..."
-            className="border rounded px-3 py-2 flex-1"
+            className="flex-1"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -56,10 +77,9 @@ export default function App() {
           />
         </div>
 
-        <input
+        <Input
           type="text"
           placeholder="Wallet address (0x...)"
-          className="border rounded px-3 py-2"
           value={wallet}
           onChange={(e) => {
             setWallet(e.target.value)
@@ -72,55 +92,55 @@ export default function App() {
         <p>Loading...</p>
       ) : (
         <>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             {tokensData?.total ?? 0} tokens found
           </p>
 
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2">Symbol</th>
-                <th className="text-left py-2">Name</th>
-                <th className="text-left py-2">Network</th>
-                <th className="text-left py-2">Contract</th>
-                {wallet && <th className="text-left py-2">Balance</th>}
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Symbol</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Network</TableHead>
+                <TableHead>Contract</TableHead>
+                {wallet && <TableHead>Balance</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {tokensData?.tokens.map((token) => (
-                <tr key={`${token.id}-${token.network_id}`} className="border-b">
-                  <td className="py-2 font-mono">{token.symbol}</td>
-                  <td className="py-2">{token.name}</td>
-                  <td className="py-2">{token.network_id}</td>
-                  <td className="py-2 font-mono text-xs">
+                <TableRow key={`${token.id}-${token.network_id}`}>
+                  <TableCell className="font-mono">{token.symbol}</TableCell>
+                  <TableCell>{token.name}</TableCell>
+                  <TableCell>{token.network_id}</TableCell>
+                  <TableCell className="font-mono text-xs">
                     {token.contract_address?.slice(0, 10)}...
-                  </td>
+                  </TableCell>
                   {wallet && (
-                    <td className="py-2 font-mono">
+                    <TableCell className="font-mono">
                       {token.balance ?? '-'}
-                    </td>
+                    </TableCell>
                   )}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           <div className="flex gap-2 mt-4">
-            <button
-              className="px-4 py-2 border rounded disabled:opacity-50"
+            <Button
+              variant="outline"
               disabled={page === 1}
               onClick={() => setPage(p => p - 1)}
             >
               Previous
-            </button>
+            </Button>
             <span className="px-4 py-2">Page {page}</span>
-            <button
-              className="px-4 py-2 border rounded disabled:opacity-50"
+            <Button
+              variant="outline"
               disabled={(tokensData?.tokens.length ?? 0) < 50}
               onClick={() => setPage(p => p + 1)}
             >
               Next
-            </button>
+            </Button>
           </div>
         </>
       )}

@@ -30,13 +30,15 @@ docker build -f apps/api/Dockerfile -t api .
 - `packages/shared/` - Shared Zod schemas and TypeScript types
 
 **Key Files**:
-- `apps/api/src/routes.ts` - REST route definitions
-- `apps/api/src/index.ts` - Express server setup
+- `apps/api/src/app.ts` - Express app configuration
+- `apps/api/src/server.ts` - Server entry point
+- `apps/api/src/routes/` - REST route definitions
 - `apps/api/src/migrate.ts` - Database migration runner
 - `apps/api/migrations/` - SQL migration files (001_*.sql, 002_*.sql, etc.)
 - `apps/web/src/api.ts` - Typed API client (fetch + types)
 - `apps/web/src/main.tsx` - React entry with React Query provider
 - `apps/web/src/App.tsx` - Main UI component
+- `apps/web/src/components/ui/` - shadcn/ui components (Radix + Tailwind)
 - `packages/shared/src/schemas.ts` - Shared Zod schemas
 
 ## Tech Decisions
@@ -44,7 +46,7 @@ docker build -f apps/api/Dockerfile -t api .
 - REST API with Express
 - Zod for runtime validation
 - React Query for server state management
-- PostgreSQL via `pg` (node-postgres) driver (not an ORM)
+- PostgreSQL via `pg-promise` (Express-recommended driver)
 
 ## Current Status
 

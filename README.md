@@ -26,8 +26,6 @@ This service exposes a REST API with an OpenAPI specification. The decision cons
 
 3. **REST + OpenAPI** (chosen) - Universal compatibility. Any service in any language can consume the API using the OpenAPI spec to generate clients. Well-understood patterns, excellent tooling ecosystem, and easy to debug. The right level of complexity for the current requirements.
 
-> **Note**: OpenAPI documentation is not included in this implementation. For a production app, I'd add auto-generated docs using a library like `zod-to-openapi` to derive the spec from the existing Zod validation schemas. Omitted here as it's straightforward and not the focus of this exercise.
-
 ## Database Access Decision
 
 This service uses `pg-promise` with raw SQL instead of an ORM like Prisma or Drizzle. The schema is simple (2 tables, 1 foreign key) and the queries are straightforward SELECTs and UPSERTs. An ORM would add dependency weight (~15MB for Prisma), require a code generation step in the build, and abstract away queries that are already easy to read. Raw SQL keeps the codebase simple and the Docker image small.
@@ -41,6 +39,22 @@ Which package manager to use is generally very team dependent, and mostly prefer
 ```bash
 npm run migrate -w @repo/api # Apply pending migrations
 ```
+
+## Design System
+
+Often the most difficult part of UI development is maintaining a common brand image, consistent styling and behavior with full accessibility features. The best way to handle this is by working with a proper design system.
+
+This project uses [shadcn/ui](https://ui.shadcn.com) components, which are built on [Radix UI](https://www.radix-ui.com) primitives for accessibility (keyboard navigation, ARIA attributes, focus management) and styled with Tailwind CSS. The components live in `apps/web/src/components/ui/`.
+
+**Note on scaling**: At larger scale with multiple frontend applications, the design system would typically be extracted into a standalone package (`packages/design-system`) with its own build step, Tailwind preset, and component exports. This allows shared components and consistent branding across apps. For brevity in this project, the components are implemented directly within the web app.
+
+## Client State Management
+
+Since we really dont have much client state, and its all server state, i am simply omitting state management, since we have caching for API responses.
+
+## Server-Side Caching
+
+At scale, we would want to use redis or similar to cache common response to serve them immediatley. Omitting here. 
 
 ## Production Deployment
 
