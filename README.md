@@ -83,6 +83,7 @@ npm - avoiding unnecessary complexity.
 
 The following items are not addressed in this implementation but would be recommended for a production system:
 
+- **Background Token Sync** - Tokens are only synced from CoinGecko on startup. A production system should have a background worker that periodically syncs to pick up new tokens and update metadata.
 - **Testing** - No unit, integration, or E2E tests. Consider Jest for unit tests, Supertest for API integration tests, and Playwright/Cypress for E2E.
 - **Error Tracking** - No Sentry or DataDog integration for capturing and alerting on production errors.
 - **APM/Metrics** - No Prometheus, StatsD, or similar for application performance monitoring and metrics collection.
