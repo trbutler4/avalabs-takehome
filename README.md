@@ -105,4 +105,5 @@ The following items are not addressed in this implementation due to time constra
 - **Error Tracking** - No Sentry or DataDog integration for capturing and alerting on production errors.
 - **APM/Metrics** - No Prometheus, StatsD, or similar for application performance monitoring and metrics collection.
 - **Caching Layer** - Redis for caching common API responses and reducing database load.
+- **UI Polish** - Custom typography, loading animations/skeletons, transitions, and responsive design improvements.
 - **Production Runbook** - Documentation for deployment procedures, scaling strategies, and disaster recovery.
