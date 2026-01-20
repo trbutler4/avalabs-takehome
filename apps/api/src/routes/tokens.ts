@@ -132,12 +132,25 @@ router.get("/", async (req, res) => {
 		const { network_id, search, wallet, page, limit } = parsed.data;
 		const offset = (page - 1) * limit;
 
-		// Wallet query: fetch balances from Alchemy, paginate in-memory
+		// Wallet query: fetch balances from Alchemy, filter/paginate in-memory
 		if (wallet) {
-			const allTokens = await getTokensWithBalances(wallet, network_id);
-			allTokens.sort((a, b) => a.name.localeCompare(b.name));
-			const tokens = allTokens.slice(offset, offset + limit);
-			res.json({ tokens, total: allTokens.length });
+			let tokens = await getTokensWithBalances(wallet, network_id);
+
+			// Apply search filter if provided
+			if (search) {
+				const term = search.toLowerCase();
+				tokens = tokens.filter(
+					(t) =>
+						t.symbol.toLowerCase().includes(term) ||
+						t.name.toLowerCase().includes(term) ||
+						t.contract_address?.toLowerCase().includes(term),
+				);
+			}
+
+			tokens.sort((a, b) => a.name.localeCompare(b.name));
+			const total = tokens.length;
+			tokens = tokens.slice(offset, offset + limit);
+			res.json({ tokens, total });
 			return;
 		}
 

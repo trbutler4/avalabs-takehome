@@ -37,7 +37,7 @@ Deployed on Digital Ocean App Platform with managed PostgreSQL.
 
 **Token Query Parameters** - I interpreted the spec's separate query param examples as combinable (e.g., `/tokens?wallet=0x...&search=eth&network_id=ethereum`).
 
-**Client-Side Filtering for Wallet Tokens** - The client fetches all pages upfront and filters locally. Wallet queries require ~26 Alchemy RPC calls regardless of search terms, so caching everything makes subsequent searches instant.
+**Client-Side Filtering for Wallet Tokens** - When a wallet is provided, the client fetches all pages upfront and filters/searches locally. Wallet queries require ~26 Alchemy RPC calls regardless of search terms, so caching everything makes subsequent searches instant without additional API requests.
 
 **Rate Limiting** - In-memory with express-rate-limit. Would need Redis for horizontal scaling.
 
