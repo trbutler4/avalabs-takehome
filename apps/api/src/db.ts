@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import pgPromise from "pg-promise";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -5,15 +8,14 @@ if (!DATABASE_URL) {
 	throw new Error("DATABASE_URL environment variable is required");
 }
 
-// NOTE: Using rejectUnauthorized: false for this demo. There is no sensitive data
-// in the database and this is for quick demo purposes. The tradeoff is vulnerability
-// to MITM attacks since we can't verify we're talking to the real database server.
-// For production with sensitive data, use a CA certificate approach instead.
-function getSSLConfig(): false | { rejectUnauthorized: false } {
+function getSSLConfig(): false | { ca: string } {
 	if (process.env.DB_SSL !== "true") {
 		return false;
 	}
-	return { rejectUnauthorized: false };
+	const __dirname = dirname(fileURLToPath(import.meta.url));
+	const caPath = join(__dirname, "..", "certs", "ca-certificate.crt");
+	const ca = readFileSync(caPath, "utf-8");
+	return { ca };
 }
 
 const pgp = pgPromise();

@@ -7,7 +7,7 @@
 		"build": "tsc",
 		"start": "node dist/server.js",
 		"typecheck": "tsc --noEmit",
-		"migrate": "node-pg-migrate -m migrations -j ts",
+		"migrate": "node-pg-migrate -m migrations -j ts -f migrate-config.cjs",
 		"migrate:up": "npm run migrate -- up",
 		"migrate:down": "npm run migrate -- down",
 		"migrate:create": "node-pg-migrate -m migrations -j ts create"
