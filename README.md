@@ -27,18 +27,11 @@ npm run -w @repo/api migrate:create -- name  # Create new migration
 
 ## Production Deployment
 
-**API**: Dockerized for container orchestration (ECS, Cloud Run, Kubernetes)
-```bash
-docker build -f apps/api/Dockerfile -t api .
-```
+Deployed on Digital Ocean:
 
-**Web**: Static build deployed to CDN (Vercel, Cloudflare Pages, S3+CloudFront)
-```bash
-npm run build -w @repo/web
-# Deploy apps/web/dist to CDN
-```
-
-**Database**: Use a managed PostgreSQL service (RDS, Cloud SQL, etc.)
+- **API**: App Platform (container from `apps/api/Dockerfile`)
+- **Web**: App Platform (static site from `apps/web/dist`)
+- **Database**: Managed PostgreSQL
 
 ## Design Decisions
 
