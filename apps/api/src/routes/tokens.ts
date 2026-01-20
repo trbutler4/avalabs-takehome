@@ -141,7 +141,19 @@ router.get("/", async (req, res) => {
 
 		// If wallet is provided, get balances and filter
 		if (wallet) {
-			const tokens = await getTokensWithBalances(wallet, network_id);
+			let tokens = await getTokensWithBalances(wallet, network_id);
+
+			// Apply search filter if provided
+			if (search) {
+				const term = search.toLowerCase();
+				tokens = tokens.filter(
+					(t) =>
+						t.symbol.toLowerCase().includes(term) ||
+						t.name.toLowerCase().includes(term) ||
+						t.contract_address?.toLowerCase().includes(term),
+				);
+			}
+
 			tokens.sort((a, b) => a.name.localeCompare(b.name));
 			const paginatedTokens = tokens.slice(offset, offset + limit);
 			res.json({ tokens: paginatedTokens, total: tokens.length });
