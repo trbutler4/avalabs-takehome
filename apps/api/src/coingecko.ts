@@ -80,14 +80,41 @@ export async function syncTokens() {
 		`${COINGECKO_BASE}/coins/list?include_platform=true`,
 	);
 
+	const coinMap = new Map(coins.map((c) => [c.id, c]));
+
+	// Sync native tokens using native_coin_id from networks
+	const networks = await db.manyOrNone<{
+		id: string;
+		native_coin_id: string;
+	}>(
+		"SELECT id, native_coin_id FROM networks WHERE native_coin_id IS NOT NULL",
+	);
+
+	let nativeCount = 0;
+	for (const network of networks) {
+		const coin = coinMap.get(network.native_coin_id);
+		if (!coin) continue;
+
+		await db.none(
+			`INSERT INTO tokens (id, network_id, symbol, name, contract_address, synced_at)
+       VALUES ($1, $2, $3, $4, NULL, NOW())
+       ON CONFLICT (id, network_id) DO UPDATE SET
+         symbol = EXCLUDED.symbol,
+         name = EXCLUDED.name,
+         synced_at = NOW()`,
+			[coin.id, network.id, coin.symbol, coin.name],
+		);
+		nativeCount++;
+	}
+	console.info(`Synced ${nativeCount} native tokens`);
+
+	// Sync ERC-20 tokens with contract addresses
 	let count = 0;
 	for (const coin of coins) {
 		if (!coin.platforms || Object.keys(coin.platforms).length === 0) continue;
 
 		for (const [networkId, contractAddress] of Object.entries(coin.platforms)) {
 			if (!contractAddress) continue;
-
-			// Skip networks we don't have RPC support for
 			if (!SUPPORTED_NETWORKS.has(networkId)) continue;
 
 			await db.none(
@@ -103,7 +130,7 @@ export async function syncTokens() {
 			count++;
 		}
 	}
-	console.info(`Synced ${count} tokens`);
+	console.info(`Synced ${count} ERC-20 tokens`);
 }
 
 // PostgreSQL advisory lock ID for preventing concurrent syncs across instances.

@@ -11,25 +11,17 @@ import { TokensQuerySchema } from "../openapi.js";
 
 const router = Router();
 
-// Native token symbols by network
-const NATIVE_SYMBOLS: Record<string, { symbol: string; name: string }> = {
-	ethereum: { symbol: "ETH", name: "Ether" },
-	"polygon-pos": { symbol: "POL", name: "POL" },
-	"arbitrum-one": { symbol: "ETH", name: "Ether" },
-	"optimistic-ethereum": { symbol: "ETH", name: "Ether" },
-	base: { symbol: "ETH", name: "Ether" },
-	"binance-smart-chain": { symbol: "BNB", name: "BNB" },
-	avalanche: { symbol: "AVAX", name: "Avalanche" },
-	fantom: { symbol: "FTM", name: "Fantom" },
-	gnosis: { symbol: "xDAI", name: "xDAI" },
-	linea: { symbol: "ETH", name: "Ether" },
-	blast: { symbol: "ETH", name: "Ether" },
-	zksync: { symbol: "ETH", name: "Ether" },
-	scroll: { symbol: "ETH", name: "Ether" },
-	mantle: { symbol: "MNT", name: "Mantle" },
-	celo: { symbol: "CELO", name: "Celo" },
-	moonbeam: { symbol: "GLMR", name: "Glimmer" },
-};
+// Lower score = higher relevance
+function getSearchRelevanceScore(token: Token, term: string): number {
+	const symbol = token.symbol.toLowerCase();
+	const name = token.name.toLowerCase();
+
+	if (symbol === term) return 0; // Exact symbol match
+	if (name === term) return 1; // Exact name match
+	if (symbol.startsWith(term)) return 2; // Symbol starts with
+	if (name.startsWith(term)) return 3; // Name starts with
+	return 4; // Contains match
+}
 
 async function getTokensWithBalances(
 	wallet: string,
@@ -55,29 +47,42 @@ async function getTokensWithBalances(
 
 	if (balances.length === 0) return [];
 
-	// Separate native tokens (no DB lookup needed) from ERC-20 tokens
+	// Separate native tokens from ERC-20 tokens
 	const tokens: Token[] = [];
 	const erc20Balances: TokenBalance[] = [];
+	const nativeBalances: (TokenBalance & { networkId: string })[] = [];
 
 	for (const b of balances) {
 		if (!b.networkId) continue;
 
 		if (b.contractAddress === NATIVE_TOKEN_ADDRESS) {
-			const nativeInfo = NATIVE_SYMBOLS[b.networkId] ?? {
-				symbol: "NATIVE",
-				name: "Native Token",
-			};
-			tokens.push({
-				id: `${b.networkId}-native`,
-				symbol: nativeInfo.symbol,
-				name: nativeInfo.name,
-				contract_address: null,
-				network_id: b.networkId,
-				balance: b.balance,
-				decimals: b.decimals,
-			});
+			nativeBalances.push(b as TokenBalance & { networkId: string });
 		} else {
 			erc20Balances.push(b);
+		}
+	}
+
+	// Look up native tokens from DB
+	if (nativeBalances.length > 0) {
+		const networkIds = nativeBalances.map((b) => b.networkId);
+		const nativeRows = await db.manyOrNone<Token>(
+			`SELECT id, symbol, name, contract_address, network_id
+			FROM tokens
+			WHERE contract_address IS NULL AND network_id = ANY($1::text[])`,
+			[networkIds],
+		);
+
+		const nativeMap = new Map(nativeRows.map((r) => [r.network_id, r]));
+
+		for (const b of nativeBalances) {
+			const nativeToken = nativeMap.get(b.networkId);
+			if (nativeToken) {
+				tokens.push({
+					...nativeToken,
+					balance: b.balance,
+					decimals: b.decimals,
+				});
+			}
 		}
 	}
 
@@ -143,18 +148,27 @@ router.get("/", async (req, res) => {
 		if (wallet) {
 			let tokens = await getTokensWithBalances(wallet, network_id);
 
-			// Apply search filter if provided
+			// Apply search filter and relevance sorting
 			if (search) {
 				const term = search.toLowerCase();
-				tokens = tokens.filter(
-					(t) =>
-						t.symbol.toLowerCase().includes(term) ||
-						t.name.toLowerCase().includes(term) ||
-						t.contract_address?.toLowerCase().includes(term),
-				);
+				tokens = tokens
+					.filter(
+						(t) =>
+							t.symbol.toLowerCase().includes(term) ||
+							t.name.toLowerCase().includes(term) ||
+							t.contract_address?.toLowerCase().includes(term),
+					)
+					.sort((a, b) => {
+						const scoreA = getSearchRelevanceScore(a, term);
+						const scoreB = getSearchRelevanceScore(b, term);
+						return scoreA !== scoreB
+							? scoreA - scoreB
+							: a.name.localeCompare(b.name);
+					});
+			} else {
+				tokens.sort((a, b) => a.name.localeCompare(b.name));
 			}
 
-			tokens.sort((a, b) => a.name.localeCompare(b.name));
 			const paginatedTokens = tokens.slice(offset, offset + limit);
 			res.json({ tokens: paginatedTokens, total: tokens.length });
 			return;
@@ -169,27 +183,47 @@ router.get("/", async (req, res) => {
 			conditions.push(`network_id = $${paramIndex++}`);
 			params.push(network_id);
 		}
+		// For search, we need both the LIKE term and exact term for relevance scoring
+		let searchTerm = "";
 		if (search) {
-			const term = `%${search.toLowerCase()}%`;
+			searchTerm = search.toLowerCase();
+			const likeTerm = `%${searchTerm}%`;
 			conditions.push(`(
         LOWER(symbol) LIKE $${paramIndex}
         OR LOWER(name) LIKE $${paramIndex}
         OR LOWER(contract_address) LIKE $${paramIndex}
       )`);
 			paramIndex++;
-			params.push(term);
+			params.push(likeTerm);
 		}
 
 		const where =
 			conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
+		// Build ORDER BY clause with relevance scoring when searching
+		const orderBy = search
+			? `ORDER BY
+        CASE
+          WHEN LOWER(symbol) = $${paramIndex} THEN 0
+          WHEN LOWER(name) = $${paramIndex} THEN 1
+          WHEN LOWER(symbol) LIKE $${paramIndex} || '%' THEN 2
+          WHEN LOWER(name) LIKE $${paramIndex} || '%' THEN 3
+          ELSE 4
+        END,
+        name`
+			: "ORDER BY name";
+
+		const queryParams = search
+			? [...params, searchTerm, limit, offset]
+			: [...params, limit, offset];
+
 		const tokens = await db.manyOrNone<Token>(
 			`SELECT id, symbol, name, contract_address, network_id
        FROM tokens
        ${where}
-       ORDER BY name
-       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
-			[...params, limit, offset],
+       ${orderBy}
+       LIMIT $${search ? paramIndex + 1 : paramIndex++} OFFSET $${search ? paramIndex + 2 : paramIndex}`,
+			queryParams,
 		);
 
 		const { count } = await db.one<{ count: string }>(
