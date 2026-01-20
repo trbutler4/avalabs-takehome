@@ -225,22 +225,23 @@ export default function App() {
 														{token.network_id}
 													</TableCell>
 													<TableCell className="font-mono text-xs text-muted-foreground">
-														{token.contract_address ? (
-															<button
-																type="button"
-																onClick={() =>
-																	copyToClipboard(token.contract_address!)
-																}
-																className="hover:text-foreground cursor-pointer transition-colors"
-																title={`Copy ${token.contract_address}`}
-															>
-																{copiedAddress === token.contract_address
-																	? "Copied!"
-																	: `${token.contract_address.slice(0, 10)}...`}
-															</button>
-														) : (
-															<span className="italic">Native</span>
-														)}
+														{(() => {
+															const addr = token.contract_address;
+															return addr ? (
+																<button
+																	type="button"
+																	onClick={() => copyToClipboard(addr)}
+																	className="hover:text-foreground cursor-pointer transition-colors"
+																	title={`Copy ${addr}`}
+																>
+																	{copiedAddress === addr
+																		? "Copied!"
+																		: `${addr.slice(0, 10)}...`}
+																</button>
+															) : (
+																<span className="italic">Native</span>
+															);
+														})()}
 													</TableCell>
 													{wallet && (
 														<TableCell className="font-mono">
