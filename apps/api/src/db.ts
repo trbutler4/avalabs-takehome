@@ -6,4 +6,12 @@ const DATABASE_URL =
 
 const pgp = pgPromise();
 
-export const db = pgp(DATABASE_URL);
+export const db = pgp({
+	connectionString: DATABASE_URL,
+	// Pool configuration
+	max: Number(process.env.DB_POOL_MAX) || 20,
+	idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT) || 30000,
+	connectionTimeoutMillis: Number(process.env.DB_CONNECT_TIMEOUT) || 5000,
+	// SSL for production (most managed databases require this)
+	ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+});
