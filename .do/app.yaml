@@ -78,6 +78,11 @@ jobs:
       - key: DB_SSL
         scope: RUN_TIME
         value: "true"
+      # NOTE: Disables SSL cert verification for migrations. Same tradeoff as db.ts -
+      # acceptable for demo with no sensitive data, but vulnerable to MITM attacks.
+      - key: NODE_TLS_REJECT_UNAUTHORIZED
+        scope: RUN_TIME
+        value: "0"
 
 databases:
   - name: db
