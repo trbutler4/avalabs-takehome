@@ -49,5 +49,5 @@ Deployed on Digital Ocean App Platform with managed PostgreSQL.
 - **Testing** - No tests. Would add Jest, Supertest, Playwright.
 - **Observability** - No error tracking (Sentry), APM, or metrics.
 - **Caching** - Redis for API responses.
-- **UI Polish** - Typography, animations, skeletons.
+- **UI Polish** - Typography, animations, skeletons. Automatic ENS detection on wallet input. Maybe a seperate portfolio page.
 - **API Docs** - Swagger UI for `/openapi.json`.
