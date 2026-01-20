@@ -99,6 +99,6 @@ export function generateOpenAPIDocument() {
 			version: "1.0.0",
 			description: "API for crypto networks and token assets",
 		},
-		servers: [{ url: "http://localhost:3000" }],
+		servers: [{ url: process.env.API_URL || "http://localhost:3000" }],
 	});
 }
