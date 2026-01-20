@@ -21,36 +21,11 @@ interface CoinGeckoCoin {
 // Only sync networks we have RPC support for
 const SUPPORTED_NETWORKS = new Set(getSupportedNetworkIds());
 
-// Rate limiter: max 30 requests per minute
-let requestCount = 0;
-let windowStart = Date.now();
-
-async function rateLimitedFetch(url: string) {
-	const now = Date.now();
-	if (now - windowStart > 60_000) {
-		requestCount = 0;
-		windowStart = now;
-	}
-
-	if (requestCount >= 30) {
-		const waitTime = 60_000 - (now - windowStart);
-		console.warn(`Rate limit reached, waiting ${waitTime}ms`);
-		await new Promise((r) => setTimeout(r, waitTime));
-		requestCount = 0;
-		windowStart = Date.now();
-	}
-
-	requestCount++;
-	const res = await fetch(url);
-	if (!res.ok) throw new Error(`CoinGecko API error: ${res.status}`);
-	return res.json();
-}
-
 export async function syncNetworks() {
 	console.info("Syncing networks from CoinGecko...");
-	const platforms: CoinGeckoPlatform[] = await rateLimitedFetch(
-		`${COINGECKO_BASE}/asset_platforms`,
-	);
+	const res = await fetch(`${COINGECKO_BASE}/asset_platforms`);
+	if (!res.ok) throw new Error(`CoinGecko API error: ${res.status}`);
+	const platforms: CoinGeckoPlatform[] = await res.json();
 
 	// Filter to only networks we have RPC support for
 	const supportedPlatforms = platforms.filter(
@@ -76,9 +51,9 @@ export async function syncNetworks() {
 
 export async function syncTokens() {
 	console.info("Syncing tokens from CoinGecko...");
-	const coins: CoinGeckoCoin[] = await rateLimitedFetch(
-		`${COINGECKO_BASE}/coins/list?include_platform=true`,
-	);
+	const res = await fetch(`${COINGECKO_BASE}/coins/list?include_platform=true`);
+	if (!res.ok) throw new Error(`CoinGecko API error: ${res.status}`);
+	const coins: CoinGeckoCoin[] = await res.json();
 
 	const coinMap = new Map(coins.map((c) => [c.id, c]));
 

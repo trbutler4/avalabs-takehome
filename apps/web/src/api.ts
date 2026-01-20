@@ -33,3 +33,24 @@ export async function fetchTokens(query: TokensQuery): Promise<TokensResponse> {
 	const data = await res.json();
 	return TokensResponseSchema.parse(data);
 }
+
+// Fetch all pages of tokens (for wallet queries where we need all data upfront)
+export async function fetchAllTokens(
+	query: Omit<TokensQuery, "page" | "limit">,
+): Promise<Token[]> {
+	const limit = 100; // Max allowed by API
+	let page = 1;
+	let allTokens: Token[] = [];
+
+	while (true) {
+		const response = await fetchTokens({ ...query, page, limit });
+		allTokens = allTokens.concat(response.tokens);
+
+		if (allTokens.length >= response.total || response.tokens.length < limit) {
+			break;
+		}
+		page++;
+	}
+
+	return allTokens;
+}
