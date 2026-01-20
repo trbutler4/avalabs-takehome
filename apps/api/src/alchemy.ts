@@ -64,6 +64,10 @@ interface AlchemyTokenBalancesResult {
 // NOTE: of course, in a more feature rich application that supports more complicated things we would use the ERC20 abi. This is fine for our use case here.
 const DECIMALS_SELECTOR = "0x313ce567";
 
+// 32-byte zero value returned by Alchemy for tokens with zero balance
+const ZERO_BALANCE =
+	"0x0000000000000000000000000000000000000000000000000000000000000000";
+
 async function getTokenDecimals(
 	alchemyNetwork: string,
 	contractAddresses: string[],
@@ -206,9 +210,7 @@ export async function getTokenBalances(
 	}
 
 	const nonZeroBalances = data.result.tokenBalances.filter(
-		(t) =>
-			t.tokenBalance !==
-			"0x0000000000000000000000000000000000000000000000000000000000000000",
+		(t) => t.tokenBalance !== ZERO_BALANCE,
 	);
 
 	if (nonZeroBalances.length > 0) {
@@ -249,7 +251,13 @@ export async function getAllTokenBalances(
 	const results = await Promise.all(
 		networkIds.map((networkId) =>
 			getTokenBalances(networkId, walletAddress, cachedDecimals).catch(
-				() => [],
+				(err) => {
+					console.warn(
+						`Failed to fetch balances for ${networkId}:`,
+						err.message,
+					);
+					return [];
+				},
 			),
 		),
 	);

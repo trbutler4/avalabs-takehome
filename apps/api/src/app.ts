@@ -5,6 +5,10 @@ import helmet from "helmet";
 import { db } from "./db.js";
 import routes from "./routes/index.js";
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 100; // requests per window
+
 const app = express();
 
 app.use(helmet());
@@ -21,10 +25,9 @@ app.use(
 );
 app.use(express.json());
 
-// Rate limiting: 100 requests per minute per IP
 const limiter = rateLimit({
-	windowMs: 60 * 1000,
-	max: 100,
+	windowMs: RATE_LIMIT_WINDOW_MS,
+	max: RATE_LIMIT_MAX_REQUESTS,
 	message: { error: "Too many requests, please try again later" },
 	standardHeaders: true,
 	legacyHeaders: false,

@@ -3,6 +3,7 @@ import { sync } from "./coingecko.js";
 import { db } from "./db.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
+const SHUTDOWN_TIMEOUT_MS = 10_000; // Force exit if graceful shutdown hangs
 
 function validateEnv() {
 	const required = ["DATABASE_URL", "ALCHEMY_API_KEY"];
@@ -35,11 +36,10 @@ async function main() {
 	const shutdown = () => {
 		console.info("\nShutting down...");
 
-		// Force exit after 10 seconds if graceful shutdown hangs
 		const forceExit = setTimeout(() => {
 			console.error("Shutdown timed out, forcing exit");
 			process.exit(1);
-		}, 10000);
+		}, SHUTDOWN_TIMEOUT_MS);
 
 		server.closeAllConnections();
 		server.close(() => {

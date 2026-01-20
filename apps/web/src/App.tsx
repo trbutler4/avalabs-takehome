@@ -21,6 +21,11 @@ import {
 } from "@/components/ui/table";
 import { fetchNetworks, fetchTokens } from "./api";
 
+// Balance formatting constants
+const DEFAULT_DECIMALS = 18; // Standard for EVM native tokens and most ERC-20s
+const DISPLAY_DECIMALS = 6; // Max decimal places to show in UI
+const MIN_DISPLAY_THRESHOLD = "<0.00001"; // Shown when balance is non-zero but too small
+
 function useDebouncedValue<T>(value: T, delay: number): T {
 	const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -39,18 +44,19 @@ function formatBalance(
 	if (!balance) return "-";
 
 	try {
-		// Convert hex to bigint if needed (EVM balances are hex)
-		const value = balance.startsWith("0x") ? BigInt(balance) : BigInt(balance);
+		// BigInt handles both hex (0x...) and decimal strings
+		const value = BigInt(balance);
 		if (value === 0n) return "0";
 
-		const dec = decimals ?? 18;
+		const dec = decimals ?? DEFAULT_DECIMALS;
 		const divisor = 10n ** BigInt(dec);
 		const whole = value / divisor;
 		const remainder = value % divisor;
 
-		// Format with up to 6 decimal places
 		const remainderStr = remainder.toString().padStart(dec, "0");
-		const decimalsToShow = remainderStr.slice(0, 6).replace(/0+$/, "");
+		const decimalsToShow = remainderStr
+			.slice(0, DISPLAY_DECIMALS)
+			.replace(/0+$/, "");
 
 		if (decimalsToShow) {
 			return `${whole.toLocaleString()}.${decimalsToShow}`;
@@ -58,7 +64,7 @@ function formatBalance(
 
 		// Non-zero but too small to display
 		if (whole === 0n && remainder > 0n) {
-			return "<0.00001";
+			return MIN_DISPLAY_THRESHOLD;
 		}
 
 		return whole.toLocaleString();

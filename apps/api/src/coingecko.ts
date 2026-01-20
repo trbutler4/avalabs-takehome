@@ -106,7 +106,9 @@ export async function syncTokens() {
 	console.info(`Synced ${count} tokens`);
 }
 
-// Lock ID for preventing concurrent syncs across instances
+// PostgreSQL advisory lock ID for preventing concurrent syncs across instances.
+// NOTE: This is likely unnecessary for a single-instance deployment, but included
+// to demonstrate production-readiness for horizontal scaling scenarios.
 const SYNC_LOCK_ID = 1234567890;
 
 export async function sync() {
