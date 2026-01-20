@@ -54,7 +54,7 @@ static_sites:
       repo: trbutler4/avalabs-takehome
       branch: main
       deploy_on_push: false
-    build_command: npm ci && npm run build -w @repo/web
+    build_command: npm ci && npm run build -w @repo/shared && npm run build -w @repo/web
     output_dir: apps/web/dist
     envs:
       - key: VITE_API_URL
