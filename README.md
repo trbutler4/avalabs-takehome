@@ -41,7 +41,7 @@ Deployed on Digital Ocean App Platform with managed PostgreSQL.
 
 **Omitted** - Auth, server-side caching, client state management (React Query is mostly sufficient, including some state in URL params would probably actually be enough).
 
-## Future Work
+## Future Work (due to time constraints)
 
 - **Background Token Sync** - Currently only syncs on startup when DB is empty. Would add periodic sync, token images, and market data.
 - **Testing** - No tests. Would add Jest, Supertest, Playwright.
