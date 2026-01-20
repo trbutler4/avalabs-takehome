@@ -87,5 +87,5 @@ jobs:
 databases:
   - name: db
     engine: PG
-    production: false
+    production: true
     version: "16"
