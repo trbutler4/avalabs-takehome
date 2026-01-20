@@ -88,4 +88,5 @@ databases:
   - name: db
     engine: PG
     production: true
+    cluster_name: avalabs-db
     version: "16"
