@@ -117,7 +117,8 @@ export function getSupportedNetworkIds(): string[] {
 }
 
 // Native token uses zero address as identifier
-const NATIVE_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000";
+export const NATIVE_TOKEN_ADDRESS =
+	"0x0000000000000000000000000000000000000000";
 
 async function getNativeBalance(
 	alchemyNetwork: string,

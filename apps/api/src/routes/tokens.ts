@@ -3,14 +3,13 @@ import { Router } from "express";
 import {
 	getAllTokenBalances,
 	getTokenBalances,
+	NATIVE_TOKEN_ADDRESS,
 	type TokenBalance,
 } from "../alchemy.js";
 import { db } from "../db.js";
 import { TokensQuerySchema } from "../openapi.js";
 
 const router = Router();
-
-const NATIVE_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 // Native token symbols by network
 const NATIVE_SYMBOLS: Record<string, { symbol: string; name: string }> = {
