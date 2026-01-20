@@ -49,12 +49,12 @@ export default function App() {
   const debouncedSearch = useDebouncedValue(search, 200)
   const walletIsValid = isValidWalletAddress(wallet)
 
-  const { data: networks } = useQuery({
+  const { data: networks, isError: networksError } = useQuery({
     queryKey: ['networks'],
     queryFn: fetchNetworks,
   })
 
-  const { data: tokensData, isLoading } = useQuery({
+  const { data: tokensData, isLoading, isError: tokensError } = useQuery({
     queryKey: ['tokens', selectedNetwork, debouncedSearch, wallet, page],
     queryFn: () => fetchTokens({
       network_id: selectedNetwork === 'all' ? undefined : selectedNetwork,
@@ -65,6 +65,8 @@ export default function App() {
     }),
     enabled: walletIsValid, // Don't fetch if wallet is invalid
   })
+
+  const hasError = networksError || tokensError
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -127,7 +129,12 @@ export default function App() {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {hasError ? (
+              <div className="text-center py-8">
+                <p className="text-destructive font-medium">Failed to load data</p>
+                <p className="text-sm text-muted-foreground mt-1">Please try again later</p>
+              </div>
+            ) : isLoading ? (
               <p className="text-muted-foreground">Loading...</p>
             ) : (
               <>
