@@ -22,6 +22,9 @@ RUN npm run build -w @repo/api
 # Production stage
 FROM node:24-alpine
 
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -36,6 +39,9 @@ COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
 WORKDIR /app/apps/api
+
+# Switch to non-root user
+USER nodejs
 
 EXPOSE 3000
 
