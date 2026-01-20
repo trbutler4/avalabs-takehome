@@ -25,6 +25,8 @@ npm run -w @repo/api migrate:create -- name  # Create new
 
 Deployed on Digital Ocean App Platform with managed PostgreSQL.
 
+[Live App](https://avalabs-api-qt6t7.ondigitalocean.app/)
+
 ## Design Decisions
 
 **REST + OpenAPI** - Chose REST over tRPC/ConnectRPC for universal compatibility.
