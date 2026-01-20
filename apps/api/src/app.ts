@@ -8,9 +8,15 @@ import routes from "./routes/index.js";
 const app = express();
 
 app.use(helmet());
+
+// Support multiple CORS origins (comma-separated in env)
+const corsOrigins = process.env.CORS_ORIGIN
+	? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+	: ["http://localhost:5173"];
+
 app.use(
 	cors({
-		origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+		origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
 	}),
 );
 app.use(express.json());
