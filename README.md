@@ -31,8 +31,6 @@ Deployed on Digital Ocean App Platform with managed PostgreSQL.
 
 **pg-promise with raw SQL** - Simple 2-table schema doesn't need an ORM. Keeps the Docker image small.
 
-**shadcn/ui + Radix** - Accessible component primitives.
-
 **Network Support** - Only sync networks from CoinGecko that have Alchemy RPC support. To add a network, update `apps/api/src/alchemy.ts`.
 
 **Token Query Parameters** - I interpreted the spec's separate query param examples as combinable (e.g., `/tokens?wallet=0x...&search=eth&network_id=ethereum`).
