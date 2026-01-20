@@ -83,7 +83,11 @@ npm - avoiding unnecessary complexity.
 
 The following items are not addressed in this implementation but would be recommended for a production system:
 
-- **Background Token Sync** - Tokens are only synced from CoinGecko on startup. A production system should have a background worker that periodically syncs to pick up new tokens and update metadata.
+- **Background Token Sync** - Network and token metadata is only synced from CoinGecko on initial startup (when the database is empty). A production system should implement:
+  - Periodic sync via background worker (e.g., cron job or `setInterval`) to pick up new tokens and networks
+  - Token images/logos via `/coins/{id}` endpoint
+  - Market data (prices, market cap, 24h change) via `/coins/markets` or `/simple/price` endpoints
+  - The existing advisory lock mechanism (`pg_try_advisory_lock`) already prevents concurrent syncs across multiple instances
 - **Testing** - No unit, integration, or E2E tests. Consider Jest for unit tests, Supertest for API integration tests, and Playwright/Cypress for E2E.
 - **Error Tracking** - No Sentry or DataDog integration for capturing and alerting on production errors.
 - **APM/Metrics** - No Prometheus, StatsD, or similar for application performance monitoring and metrics collection.
