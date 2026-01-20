@@ -39,9 +39,6 @@ services:
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${db.DATABASE_URL}
-      - key: DB_CA_CERT
-        scope: RUN_TIME
-        value: ${db.CA_CERT}
       - key: ALCHEMY_API_KEY
         scope: RUN_AND_BUILD_TIME
         type: SECRET
@@ -75,9 +72,6 @@ jobs:
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${db.DATABASE_URL}
-      - key: DB_CA_CERT
-        scope: RUN_TIME
-        value: ${db.CA_CERT}
 
 databases:
   - name: db

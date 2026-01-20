@@ -5,14 +5,6 @@ import pg from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function getSSLConfig(): false | { ca: string; rejectUnauthorized: true } {
-	const ca = process.env.DB_CA_CERT;
-	if (!ca) {
-		return false;
-	}
-	return { ca, rejectUnauthorized: true };
-}
-
 async function runMigrations() {
 	const direction = process.argv[2] as "up" | "down";
 	if (!direction || !["up", "down"].includes(direction)) {
@@ -20,10 +12,17 @@ async function runMigrations() {
 		process.exit(1);
 	}
 
-	const client = new pg.Client({
-		connectionString: process.env.DATABASE_URL,
-		ssl: getSSLConfig(),
-	});
+	const databaseUrl = process.env.DATABASE_URL;
+	if (!databaseUrl) {
+		throw new Error("DATABASE_URL is required");
+	}
+
+	// Append uselibpqcompat=true for standard PostgreSQL SSL behavior
+	// This is DigitalOcean's recommended fix for App Platform database connections
+	const separator = databaseUrl.includes("?") ? "&" : "?";
+	const connectionString = `${databaseUrl}${separator}uselibpqcompat=true`;
+
+	const client = new pg.Client({ connectionString });
 
 	await client.connect();
 
