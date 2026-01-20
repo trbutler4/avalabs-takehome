@@ -6,6 +6,28 @@ import { TokensQuerySchema } from '../openapi.js'
 
 const router = Router()
 
+const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+// Native token symbols by network
+const NATIVE_SYMBOLS: Record<string, { symbol: string; name: string }> = {
+  'ethereum': { symbol: 'ETH', name: 'Ether' },
+  'polygon-pos': { symbol: 'POL', name: 'POL' },
+  'arbitrum-one': { symbol: 'ETH', name: 'Ether' },
+  'optimistic-ethereum': { symbol: 'ETH', name: 'Ether' },
+  'base': { symbol: 'ETH', name: 'Ether' },
+  'binance-smart-chain': { symbol: 'BNB', name: 'BNB' },
+  'avalanche': { symbol: 'AVAX', name: 'Avalanche' },
+  'fantom': { symbol: 'FTM', name: 'Fantom' },
+  'gnosis': { symbol: 'xDAI', name: 'xDAI' },
+  'linea': { symbol: 'ETH', name: 'Ether' },
+  'blast': { symbol: 'ETH', name: 'Ether' },
+  'zksync': { symbol: 'ETH', name: 'Ether' },
+  'scroll': { symbol: 'ETH', name: 'Ether' },
+  'mantle': { symbol: 'MNT', name: 'Mantle' },
+  'celo': { symbol: 'CELO', name: 'Celo' },
+  'moonbeam': { symbol: 'GLMR', name: 'Glimmer' },
+}
+
 router.get('/', async (req, res) => {
   const parsed = TokensQuerySchema.safeParse(req.query)
   if (!parsed.success) {
@@ -41,7 +63,27 @@ router.get('/', async (req, res) => {
     let total = 0
 
     for (const [netId, netBalances] of balancesByNetwork) {
-      const addresses = netBalances.map(b => b.contractAddress)
+      // Handle native token separately
+      const nativeBalance = netBalances.find(b => b.contractAddress === NATIVE_TOKEN_ADDRESS)
+      if (nativeBalance) {
+        const nativeInfo = NATIVE_SYMBOLS[netId] ?? { symbol: 'NATIVE', name: 'Native Token' }
+        tokens.push({
+          id: `${netId}-native`,
+          symbol: nativeInfo.symbol,
+          name: nativeInfo.name,
+          contract_address: null,
+          network_id: netId,
+          balance: nativeBalance.balance,
+          decimals: nativeBalance.decimals,
+        })
+        total++
+      }
+
+      // Handle ERC-20 tokens
+      const erc20Balances = netBalances.filter(b => b.contractAddress !== NATIVE_TOKEN_ADDRESS)
+      if (erc20Balances.length === 0) continue
+
+      const addresses = erc20Balances.map(b => b.contractAddress)
       const rows = await db.manyOrNone<Token>(
         `SELECT t.id, t.symbol, t.name, t.contract_address, t.network_id
          FROM tokens t
@@ -52,7 +94,7 @@ router.get('/', async (req, res) => {
       )
 
       const tokensWithBalances = rows.map(token => {
-        const balanceInfo = netBalances.find(b => b.contractAddress === token.contract_address?.toLowerCase())
+        const balanceInfo = erc20Balances.find(b => b.contractAddress === token.contract_address?.toLowerCase())
         return {
           ...token,
           balance: balanceInfo?.balance,

@@ -103,6 +103,36 @@ export function getSupportedNetworkIds(): string[] {
   return Object.keys(NETWORK_MAP)
 }
 
+// Native token uses zero address as identifier
+const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+async function getNativeBalance(alchemyNetwork: string, walletAddress: string): Promise<string | null> {
+  if (!ALCHEMY_API_KEY) return null
+
+  const url = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_getBalance',
+      params: [walletAddress, 'latest'],
+    }),
+  })
+
+  if (!res.ok) return null
+
+  const data = await res.json()
+  if (data.error || !data.result) return null
+
+  // Return null if balance is zero
+  if (data.result === '0x0' || data.result === '0x') return null
+
+  return data.result
+}
+
 export async function getTokenBalances(networkId: string, walletAddress: string): Promise<TokenBalance[]> {
   if (!ALCHEMY_API_KEY) {
     throw new Error('ALCHEMY_API_KEY not configured')
@@ -119,38 +149,58 @@ export async function getTokenBalances(networkId: string, walletAddress: string)
 
   const url = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'alchemy_getTokenBalances',
-      params: [walletAddress, 'erc20'],
+  // Fetch ERC-20 balances and native balance in parallel
+  const [tokenRes, nativeBalance] = await Promise.all([
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'alchemy_getTokenBalances',
+        params: [walletAddress, 'erc20'],
+      }),
     }),
-  })
+    getNativeBalance(alchemyNetwork, walletAddress),
+  ])
 
-  if (!res.ok) throw new Error(`Alchemy API error: ${res.status}`)
+  if (!tokenRes.ok) throw new Error(`Alchemy API error: ${tokenRes.status}`)
 
-  const data = await res.json()
+  const data = await tokenRes.json()
   if (data.error) throw new Error(data.error.message)
+
+  const results: TokenBalance[] = []
+
+  // Add native token balance if non-zero
+  if (nativeBalance) {
+    results.push({
+      contractAddress: NATIVE_TOKEN_ADDRESS,
+      balance: nativeBalance,
+      decimals: 18, // Native tokens always have 18 decimals
+      networkId,
+    })
+  }
 
   const nonZeroBalances = data.result.tokenBalances.filter(
     (t: any) => t.tokenBalance !== '0x0000000000000000000000000000000000000000000000000000000000000000'
   )
 
-  if (nonZeroBalances.length === 0) return []
+  if (nonZeroBalances.length > 0) {
+    // Fetch decimals for all tokens in batch
+    const contractAddresses = nonZeroBalances.map((t: any) => t.contractAddress)
+    const decimalsMap = await getTokenDecimals(alchemyNetwork, contractAddresses)
 
-  // Fetch decimals for all tokens in batch
-  const contractAddresses = nonZeroBalances.map((t: any) => t.contractAddress)
-  const decimalsMap = await getTokenDecimals(alchemyNetwork, contractAddresses)
+    for (const t of nonZeroBalances) {
+      results.push({
+        contractAddress: t.contractAddress.toLowerCase(),
+        balance: t.tokenBalance,
+        decimals: decimalsMap.get(t.contractAddress.toLowerCase()) ?? 18,
+        networkId,
+      })
+    }
+  }
 
-  return nonZeroBalances.map((t: any) => ({
-    contractAddress: t.contractAddress.toLowerCase(),
-    balance: t.tokenBalance,
-    decimals: decimalsMap.get(t.contractAddress.toLowerCase()) ?? 18,
-    networkId,
-  }))
+  return results
 }
 
 export async function getAllTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
