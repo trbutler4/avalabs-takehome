@@ -11,14 +11,13 @@ nix develop                     # Optional: reproducible dev environment (Node.j
 docker compose up -d            # Start PostgreSQL
 npm install                     # Install deps
 cp apps/api/.env.example apps/api/.env  # Configure environment variables
-export DATABASE_URL=postgres://postgres:postgres@localhost:5432/avalabs
 npm run migrate:up -w @repo/api # Run database migrations
 npm run dev                     # Start frontend + backend with hot reload
 ```
 
 ### Migrations
 
-Migrations use [node-pg-migrate](https://github.com/salsita/node-pg-migrate). `DATABASE_URL` must be set.
+Migrations use [node-pg-migrate](https://github.com/salsita/node-pg-migrate) and read `DATABASE_URL` from `.env`.
 
 ```bash
 npm run -w @repo/api migrate:up              # Apply pending migrations
@@ -71,7 +70,7 @@ Rationale: Wallet queries require Alchemy RPC calls (~16 per request across all 
 
 ### CLient Side State Management
 
-Omitted - React Query handles server state caching; no complex client state is really needed. Inlcuding the query params in the URL would probably be sufficient.
+Omitted - React Query handles server state caching; no complex client state is really needed. Inlcuding the query params in the URL to preserve state on refresh would probably be sufficient.
 
 ### Auth
 
