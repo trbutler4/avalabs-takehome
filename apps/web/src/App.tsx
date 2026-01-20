@@ -1,6 +1,7 @@
+import type { Token } from "@repo/shared";
 import { isValidEvmAddress } from "@repo/shared/validation";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { fetchNetworks, fetchTokens } from "./api";
+import { fetchAllTokens, fetchNetworks, fetchTokens } from "./api";
 
 // Balance formatting constants
 const DEFAULT_DECIMALS = 18; // Standard for EVM native tokens and most ERC-20s
@@ -88,28 +89,88 @@ export default function App() {
 
 	const debouncedSearch = useDebouncedValue(search, 200);
 	const walletIsValid = !wallet || isValidEvmAddress(wallet);
+	const pageSize = 50;
 
 	const { data: networks, isError: networksError } = useQuery({
 		queryKey: ["networks"],
 		queryFn: fetchNetworks,
 	});
 
+	// Wallet query: fetch all pages, filter/paginate client-side
 	const {
-		data: tokensData,
-		isLoading,
-		isError: tokensError,
+		data: walletTokens,
+		isLoading: walletLoading,
+		isError: walletError,
 	} = useQuery({
-		queryKey: ["tokens", selectedNetwork, debouncedSearch, wallet, page],
+		queryKey: ["tokens", "wallet", selectedNetwork, wallet],
+		queryFn: () =>
+			fetchAllTokens({
+				network_id: selectedNetwork === "all" ? undefined : selectedNetwork,
+				wallet: wallet || undefined,
+			}),
+		enabled: walletIsValid && !!wallet,
+	});
+
+	// Browse query: server handles filtering/pagination
+	const {
+		data: browseTokensData,
+		isLoading: browseLoading,
+		isError: browseError,
+	} = useQuery({
+		queryKey: ["tokens", "browse", selectedNetwork, debouncedSearch, page],
 		queryFn: () =>
 			fetchTokens({
 				network_id: selectedNetwork === "all" ? undefined : selectedNetwork,
 				search: debouncedSearch || undefined,
-				wallet: wallet || undefined,
 				page,
-				limit: 50,
+				limit: pageSize,
 			}),
-		enabled: walletIsValid, // Don't fetch if wallet is invalid
+		enabled: !wallet,
 	});
+
+	// Client-side filtering for wallet tokens
+	const filteredWalletTokens = useMemo(() => {
+		if (!walletTokens) return [];
+
+		const term = debouncedSearch.toLowerCase();
+		if (!term) return walletTokens;
+
+		// Filter by search term
+		const filtered = walletTokens.filter(
+			(t) =>
+				t.symbol.toLowerCase().includes(term) ||
+				t.name.toLowerCase().includes(term) ||
+				t.contract_address?.toLowerCase().includes(term),
+		);
+
+		// Sort by relevance
+		const relevance = (t: Token) => {
+			const sym = t.symbol.toLowerCase();
+			const name = t.name.toLowerCase();
+			if (sym === term) return 0;
+			if (name === term) return 1;
+			if (sym.startsWith(term)) return 2;
+			if (name.startsWith(term)) return 3;
+			return 4;
+		};
+
+		return filtered.sort(
+			(a, b) => relevance(a) - relevance(b) || a.name.localeCompare(b.name),
+		);
+	}, [walletTokens, debouncedSearch]);
+
+	// Client-side pagination for wallet tokens
+	const paginatedWalletTokens = useMemo(() => {
+		const start = (page - 1) * pageSize;
+		return filteredWalletTokens.slice(start, start + pageSize);
+	}, [filteredWalletTokens, page]);
+
+	// Unified data for rendering
+	const tokensData = wallet
+		? { tokens: paginatedWalletTokens, total: filteredWalletTokens.length }
+		: browseTokensData;
+	const isLoading = wallet ? walletLoading : browseLoading;
+	const tokensError = wallet ? walletError : browseError;
 
 	const hasError = networksError || tokensError;
 

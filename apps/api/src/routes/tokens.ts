@@ -11,24 +11,12 @@ import { TokensQuerySchema } from "../openapi.js";
 
 const router = Router();
 
-// Lower score = higher relevance
-function getSearchRelevanceScore(token: Token, term: string): number {
-	const symbol = token.symbol.toLowerCase();
-	const name = token.name.toLowerCase();
-
-	if (symbol === term) return 0; // Exact symbol match
-	if (name === term) return 1; // Exact name match
-	if (symbol.startsWith(term)) return 2; // Symbol starts with
-	if (name.startsWith(term)) return 3; // Name starts with
-	return 4; // Contains match
-}
-
 async function getTokensWithBalances(
 	wallet: string,
 	networkId?: string,
 ): Promise<Token[]> {
-	// Load cached decimals from DB to avoid unnecessary RPC calls
-	const cachedRows = await db.manyOrNone<{
+	// Load known decimals from DB to avoid redundant RPC calls
+	const decimalRows = await db.manyOrNone<{
 		contract_address: string;
 		decimals: number;
 	}>(
@@ -37,13 +25,13 @@ async function getTokensWithBalances(
 		WHERE decimals IS NOT NULL${networkId ? " AND network_id = $1" : ""}`,
 		networkId ? [networkId] : [],
 	);
-	const cachedDecimals = new Map(
-		cachedRows.map((r) => [r.contract_address, r.decimals]),
+	const knownDecimals = new Map(
+		decimalRows.map((r) => [r.contract_address, r.decimals]),
 	);
 
 	const balances = networkId
-		? await getTokenBalances(networkId, wallet, cachedDecimals)
-		: await getAllTokenBalances(wallet, cachedDecimals);
+		? await getTokenBalances(networkId, wallet, knownDecimals)
+		: await getAllTokenBalances(wallet, knownDecimals);
 
 	if (balances.length === 0) return [];
 
@@ -120,12 +108,12 @@ async function getTokensWithBalances(
 				decimals,
 			});
 
-			// Cache newly discovered decimals (fire and forget)
+			// Save decimals discovered from RPC for future queries
 			if (token.decimals === null && decimals !== undefined) {
 				db.none(
 					"UPDATE tokens SET decimals = $1 WHERE id = $2 AND network_id = $3",
 					[decimals, token.id, token.network_id],
-				).catch((err) => console.error("Failed to cache decimals:", err));
+				).catch((err) => console.error("Failed to save decimals:", err));
 			}
 		}
 	}
@@ -144,91 +132,43 @@ router.get("/", async (req, res) => {
 		const { network_id, search, wallet, page, limit } = parsed.data;
 		const offset = (page - 1) * limit;
 
-		// If wallet is provided, get balances and filter
+		// Wallet query: fetch balances from Alchemy, paginate in-memory
 		if (wallet) {
-			let tokens = await getTokensWithBalances(wallet, network_id);
-
-			// Apply search filter and relevance sorting
-			if (search) {
-				const term = search.toLowerCase();
-				tokens = tokens
-					.filter(
-						(t) =>
-							t.symbol.toLowerCase().includes(term) ||
-							t.name.toLowerCase().includes(term) ||
-							t.contract_address?.toLowerCase().includes(term),
-					)
-					.sort((a, b) => {
-						const scoreA = getSearchRelevanceScore(a, term);
-						const scoreB = getSearchRelevanceScore(b, term);
-						return scoreA !== scoreB
-							? scoreA - scoreB
-							: a.name.localeCompare(b.name);
-					});
-			} else {
-				tokens.sort((a, b) => a.name.localeCompare(b.name));
-			}
-
-			const paginatedTokens = tokens.slice(offset, offset + limit);
-			res.json({ tokens: paginatedTokens, total: tokens.length });
+			const allTokens = await getTokensWithBalances(wallet, network_id);
+			allTokens.sort((a, b) => a.name.localeCompare(b.name));
+			const tokens = allTokens.slice(offset, offset + limit);
+			res.json({ tokens, total: allTokens.length });
 			return;
 		}
 
-		// Build query with conditions
-		const conditions: string[] = [];
-		const params: (string | number)[] = [];
-		let paramIndex = 1;
+		// Database query: filter and sort in SQL
+		const term = search?.toLowerCase();
+		const likeTerm = term ? `%${term}%` : null;
 
-		if (network_id) {
-			conditions.push(`network_id = $${paramIndex++}`);
-			params.push(network_id);
-		}
-		// For search, we need both the LIKE term and exact term for relevance scoring
-		let searchTerm = "";
-		if (search) {
-			searchTerm = search.toLowerCase();
-			const likeTerm = `%${searchTerm}%`;
-			conditions.push(`(
-        LOWER(symbol) LIKE $${paramIndex}
-        OR LOWER(name) LIKE $${paramIndex}
-        OR LOWER(contract_address) LIKE $${paramIndex}
-      )`);
-			paramIndex++;
-			params.push(likeTerm);
-		}
-
-		const where =
-			conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
-		// Build ORDER BY clause with relevance scoring when searching
-		const orderBy = search
-			? `ORDER BY
-        CASE
-          WHEN LOWER(symbol) = $${paramIndex} THEN 0
-          WHEN LOWER(name) = $${paramIndex} THEN 1
-          WHEN LOWER(symbol) LIKE $${paramIndex} || '%' THEN 2
-          WHEN LOWER(name) LIKE $${paramIndex} || '%' THEN 3
-          ELSE 4
-        END,
-        name`
-			: "ORDER BY name";
-
-		const queryParams = search
-			? [...params, searchTerm, limit, offset]
-			: [...params, limit, offset];
-
+		// Use explicit queries for clarity instead of dynamic query building
 		const tokens = await db.manyOrNone<Token>(
 			`SELECT id, symbol, name, contract_address, network_id
-       FROM tokens
-       ${where}
-       ${orderBy}
-       LIMIT $${search ? paramIndex + 1 : paramIndex++} OFFSET $${search ? paramIndex + 2 : paramIndex}`,
-			queryParams,
+			FROM tokens
+			WHERE ($1::text IS NULL OR network_id = $1)
+			  AND ($2::text IS NULL OR LOWER(symbol) LIKE $2 OR LOWER(name) LIKE $2 OR LOWER(contract_address) LIKE $2)
+			ORDER BY
+				CASE WHEN $3::text IS NULL THEN NULL
+					WHEN LOWER(symbol) = $3 THEN 0
+					WHEN LOWER(name) = $3 THEN 1
+					WHEN LOWER(symbol) LIKE $3 || '%' THEN 2
+					WHEN LOWER(name) LIKE $3 || '%' THEN 3
+					ELSE 4
+				END NULLS LAST,
+				name
+			LIMIT $4 OFFSET $5`,
+			[network_id ?? null, likeTerm, term ?? null, limit, offset],
 		);
 
 		const { count } = await db.one<{ count: string }>(
-			`SELECT COUNT(*) as count FROM tokens ${where}`,
-			params,
+			`SELECT COUNT(*) FROM tokens
+			WHERE ($1::text IS NULL OR network_id = $1)
+			  AND ($2::text IS NULL OR LOWER(symbol) LIKE $2 OR LOWER(name) LIKE $2 OR LOWER(contract_address) LIKE $2)`,
+			[network_id ?? null, likeTerm],
 		);
 
 		res.json({ tokens, total: Number(count) });

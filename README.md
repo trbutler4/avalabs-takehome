@@ -11,14 +11,13 @@ nix develop                     # Optional: reproducible dev environment (Node.j
 docker compose up -d            # Start PostgreSQL
 npm install                     # Install deps
 cp apps/api/.env.example apps/api/.env  # Configure environment variables
-export DATABASE_URL=postgres://postgres:postgres@localhost:5432/avalabs
 npm run migrate:up -w @repo/api # Run database migrations
 npm run dev                     # Start frontend + backend with hot reload
 ```
 
 ### Migrations
 
-Migrations use [node-pg-migrate](https://github.com/salsita/node-pg-migrate). `DATABASE_URL` must be set.
+Migrations use [node-pg-migrate](https://github.com/salsita/node-pg-migrate) and read `DATABASE_URL` from `.env`.
 
 ```bash
 npm run -w @repo/api migrate:up              # Apply pending migrations
@@ -59,9 +58,23 @@ Simple schema (2 tables) doesn't need an ORM. `pg-promise` is the [Express-recom
 
 Only syncs networks from CoinGecko that have RPC support configured (via Alchemy). Wallet balance queries require RPC access, and limiting to supported networks keeps the database lean. To add a network, update `apps/api/src/alchemy.ts`.
 
-### State Management
+### Token Query Parameters
 
-Omitted - React Query handles server state caching; no complex client state needed.
+The spec lists separate endpoints (`/tokens?network_id=`, `/tokens?search=`, `/tokens?wallet=`). I interpreted this as query parameters that can be combined in a single request (e.g., `/tokens?wallet=0x...&search=eth&network_id=ethereum`) rather than mutually exclusive endpoints.
+
+### Client-Side Filtering for Wallet Tokens
+
+When a wallet address is provided, the client fetches all pages of tokens upfront and caches them with React Query. Filtering and pagination then happen client-side.
+
+Rationale: Wallet queries require Alchemy RPC calls (~16 per request across all networks) regardless of search terms or pagination. Fetching all pages upfront and caching means subsequent searches are instant instead of triggering redundant RPC calls. The API remains consistently paginated per the spec.
+
+### CLient Side State Management
+
+Omitted - React Query handles server state caching; no complex client state is really needed. Inlcuding the query params in the URL to preserve state on refresh would probably be sufficient.
+
+### Auth
+
+Omitted - out of scope here. We would want some auth strategy, probably with user login on the client and api keys for other consumers.
 
 ### Server-Side Caching
 
@@ -81,7 +94,7 @@ npm - avoiding unnecessary complexity.
 
 ## Future Work
 
-The following items are not addressed in this implementation but would be recommended for a production system:
+The following items are not addressed in this implementation due to time constraints:
 
 - **Background Token Sync** - Network and token metadata is only synced from CoinGecko on initial startup (when the database is empty). A production system should implement:
   - Periodic sync via background worker (e.g., cron job or `setInterval`) to pick up new tokens and networks
@@ -92,5 +105,5 @@ The following items are not addressed in this implementation but would be recomm
 - **Error Tracking** - No Sentry or DataDog integration for capturing and alerting on production errors.
 - **APM/Metrics** - No Prometheus, StatsD, or similar for application performance monitoring and metrics collection.
 - **Caching Layer** - Redis for caching common API responses and reducing database load.
-- **Dependency Scanning** - Dependabot or Snyk for automated vulnerability scanning of dependencies.
+- **UI Polish** - Custom typography, loading animations/skeletons, transitions, and responsive design improvements.
 - **Production Runbook** - Documentation for deployment procedures, scaling strategies, and disaster recovery.
