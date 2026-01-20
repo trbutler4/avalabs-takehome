@@ -55,6 +55,12 @@ function formatBalance(
 		if (decimalsToShow) {
 			return `${whole.toLocaleString()}.${decimalsToShow}`;
 		}
+
+		// Non-zero but too small to display
+		if (whole === 0n && remainder > 0n) {
+			return "<0.00001";
+		}
+
 		return whole.toLocaleString();
 	} catch {
 		return balance;
