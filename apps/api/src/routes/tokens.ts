@@ -64,88 +64,74 @@ router.get("/", async (req, res) => {
 				return;
 			}
 
-			// Group balances by network for efficient querying
-			const balancesByNetwork = new Map<string, typeof balances>();
+			// Separate native tokens (no DB lookup needed) from ERC-20 tokens
+			const tokens: Token[] = [];
+			const erc20Balances: typeof balances = [];
+
 			for (const b of balances) {
 				if (!b.networkId) continue;
-				const existing = balancesByNetwork.get(b.networkId) ?? [];
-				existing.push(b);
-				balancesByNetwork.set(b.networkId, existing);
-			}
 
-			// Build query to find tokens across networks
-			let tokens: Token[] = [];
-			let total = 0;
-
-			for (const [netId, netBalances] of balancesByNetwork) {
-				// Handle native token separately
-				const nativeBalance = netBalances.find(
-					(b) => b.contractAddress === NATIVE_TOKEN_ADDRESS,
-				);
-				if (nativeBalance) {
-					const nativeInfo = NATIVE_SYMBOLS[netId] ?? {
+				if (b.contractAddress === NATIVE_TOKEN_ADDRESS) {
+					const nativeInfo = NATIVE_SYMBOLS[b.networkId] ?? {
 						symbol: "NATIVE",
 						name: "Native Token",
 					};
 					tokens.push({
-						id: `${netId}-native`,
+						id: `${b.networkId}-native`,
 						symbol: nativeInfo.symbol,
 						name: nativeInfo.name,
 						contract_address: null,
-						network_id: netId,
-						balance: nativeBalance.balance,
-						decimals: nativeBalance.decimals,
+						network_id: b.networkId,
+						balance: b.balance,
+						decimals: b.decimals,
 					});
-					total++;
+				} else {
+					erc20Balances.push(b);
 				}
+			}
 
-				// Handle ERC-20 tokens
-				const erc20Balances = netBalances.filter(
-					(b) => b.contractAddress !== NATIVE_TOKEN_ADDRESS,
-				);
-				if (erc20Balances.length === 0) continue;
-
+			// Single batched query for all ERC-20 tokens across all networks
+			if (erc20Balances.length > 0) {
+				const networkIds = erc20Balances.map((b) => b.networkId);
 				const addresses = erc20Balances.map((b) => b.contractAddress);
+
 				const rows = await db.manyOrNone<Token & { decimals: number | null }>(
 					`SELECT t.id, t.symbol, t.name, t.contract_address, t.network_id, t.decimals
-           FROM tokens t
-           WHERE t.network_id = $1
-             AND LOWER(t.contract_address) = ANY($2)
-           ORDER BY t.name`,
-					[netId, addresses],
+					FROM tokens t
+					JOIN unnest($1::text[], $2::text[]) AS params(network_id, contract_address)
+						ON t.network_id = params.network_id
+						AND LOWER(t.contract_address) = params.contract_address
+					ORDER BY t.name`,
+					[networkIds, addresses],
 				);
 
-				const tokensWithBalances = rows.map((token) => {
-					const balanceInfo = erc20Balances.find(
-						(b) => b.contractAddress === token.contract_address?.toLowerCase(),
-					);
-					// Use cached DB decimals if available, otherwise use RPC decimals
+				// Create lookup map for balances
+				const balanceMap = new Map(
+					erc20Balances.map((b) => [`${b.networkId}:${b.contractAddress}`, b]),
+				);
+
+				for (const token of rows) {
+					const key = `${token.network_id}:${token.contract_address?.toLowerCase()}`;
+					const balanceInfo = balanceMap.get(key);
 					const decimals = token.decimals ?? balanceInfo?.decimals ?? 18;
-					return {
+
+					tokens.push({
 						...token,
 						balance: balanceInfo?.balance,
 						decimals,
-					};
-				});
+					});
 
-				// Cache newly discovered decimals to DB (fire and forget)
-				for (const token of tokensWithBalances) {
-					const dbToken = rows.find((r) => r.id === token.id);
-					if (
-						dbToken &&
-						dbToken.decimals === null &&
-						token.decimals !== undefined
-					) {
+					// Cache newly discovered decimals (fire and forget)
+					if (token.decimals === null && decimals !== undefined) {
 						db.none(
 							"UPDATE tokens SET decimals = $1 WHERE id = $2 AND network_id = $3",
-							[token.decimals, token.id, netId],
+							[decimals, token.id, token.network_id],
 						).catch((err) => console.error("Failed to cache decimals:", err));
 					}
 				}
-
-				tokens = tokens.concat(tokensWithBalances);
-				total += rows.length;
 			}
+
+			const total = tokens.length;
 
 			// Apply pagination after aggregating
 			tokens.sort((a, b) => a.name.localeCompare(b.name));
