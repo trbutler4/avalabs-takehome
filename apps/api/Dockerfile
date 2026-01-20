@@ -38,9 +38,6 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-# Copy CA certificate for database SSL verification
-COPY apps/api/certs ./apps/api/certs
-
 WORKDIR /app/apps/api
 
 # Switch to non-root user

@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import pgPromise from "pg-promise";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -9,12 +6,10 @@ if (!DATABASE_URL) {
 }
 
 function getSSLConfig(): false | { ca: string; rejectUnauthorized: true } {
-	if (process.env.DB_SSL !== "true") {
+	const ca = process.env.DB_CA_CERT;
+	if (!ca) {
 		return false;
 	}
-	const __dirname = dirname(fileURLToPath(import.meta.url));
-	const caPath = join(__dirname, "..", "certs", "ca-certificate.crt");
-	const ca = readFileSync(caPath, "utf-8");
 	return { ca, rejectUnauthorized: true };
 }
 
