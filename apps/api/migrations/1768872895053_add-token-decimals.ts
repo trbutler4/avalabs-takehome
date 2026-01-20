@@ -1,11 +1,11 @@
-import { MigrationBuilder } from 'node-pg-migrate';
+import type { MigrationBuilder } from "node-pg-migrate";
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
-  pgm.addColumn('tokens', {
-    decimals: { type: 'integer' },
-  });
+	pgm.addColumn("tokens", {
+		decimals: { type: "integer" },
+	});
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
-  pgm.dropColumn('tokens', 'decimals');
+	pgm.dropColumn("tokens", "decimals");
 }
