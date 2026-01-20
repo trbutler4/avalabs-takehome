@@ -8,14 +8,14 @@ if (!DATABASE_URL) {
 	throw new Error("DATABASE_URL environment variable is required");
 }
 
-function getSSLConfig(): false | { ca: string } {
+function getSSLConfig(): false | { ca: string; rejectUnauthorized: true } {
 	if (process.env.DB_SSL !== "true") {
 		return false;
 	}
 	const __dirname = dirname(fileURLToPath(import.meta.url));
 	const caPath = join(__dirname, "..", "certs", "ca-certificate.crt");
 	const ca = readFileSync(caPath, "utf-8");
-	return { ca };
+	return { ca, rejectUnauthorized: true };
 }
 
 const pgp = pgPromise();

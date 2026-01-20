@@ -6,13 +6,13 @@ import pg from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function getSSLConfig(): false | { ca: string } {
+function getSSLConfig(): false | { ca: string; rejectUnauthorized: true } {
 	if (process.env.DB_SSL !== "true") {
 		return false;
 	}
 	const caPath = join(__dirname, "..", "certs", "ca-certificate.crt");
 	const ca = readFileSync(caPath, "utf-8");
-	return { ca };
+	return { ca, rejectUnauthorized: true };
 }
 
 async function runMigrations() {
