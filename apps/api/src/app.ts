@@ -27,12 +27,23 @@ app.use(limiter);
 
 // Health check endpoint
 app.get("/health", async (_req, res) => {
+	const checks = {
+		database: false,
+		alchemy: !!process.env.ALCHEMY_API_KEY,
+	};
+
 	try {
 		await db.one("SELECT 1");
-		res.json({ status: "healthy", database: "connected" });
+		checks.database = true;
 	} catch {
-		res.status(503).json({ status: "unhealthy", database: "disconnected" });
+		// database check failed
 	}
+
+	const healthy = Object.values(checks).every(Boolean);
+	res.status(healthy ? 200 : 503).json({
+		status: healthy ? "healthy" : "unhealthy",
+		checks,
+	});
 });
 
 app.use("/", routes);
