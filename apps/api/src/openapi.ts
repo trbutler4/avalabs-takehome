@@ -14,8 +14,20 @@ extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
 
-// Re-export the query schema for use in routes
+// Re-export base schema for route validation
 export { TokensQuerySchema };
+
+// OpenAPI-extended version for documentation
+const OpenAPITokensQuerySchema = z.object({
+	network_id: z.string().optional().openapi({ example: "ethereum" }),
+	search: z.string().max(100).optional().openapi({ example: "usdc" }),
+	wallet: z
+		.string()
+		.optional()
+		.openapi({ example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" }),
+	page: z.coerce.number().min(1).default(1).openapi({ example: 1 }),
+	limit: z.coerce.number().min(1).max(100).default(50).openapi({ example: 50 }),
+});
 
 // Extend base schemas with OpenAPI metadata
 export const NetworkSchema = BaseNetworkSchema.extend({
@@ -73,7 +85,7 @@ registry.registerPath({
 	description:
 		"Returns tokens filtered by network, search term, or wallet address",
 	request: {
-		query: TokensQuerySchema,
+		query: OpenAPITokensQuerySchema,
 	},
 	responses: {
 		200: {
