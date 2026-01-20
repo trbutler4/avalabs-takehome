@@ -1,3 +1,5 @@
+import { isValidEvmAddress } from "@repo/shared/validation";
+
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 
 // Map CoinGecko network IDs to Alchemy network names
@@ -32,9 +34,6 @@ const NETWORK_MAP: Record<string, string> = {
 	apechain: "apechain-mainnet",
 	berachain: "berachain-mainnet",
 };
-
-// EVM address validation
-const EVM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 
 export type TokenBalance = {
 	contractAddress: string;
@@ -113,10 +112,6 @@ async function getTokenDecimals(
 	return decimalsMap;
 }
 
-export function isValidWalletAddress(address: string): boolean {
-	return EVM_ADDRESS_REGEX.test(address);
-}
-
 export function getSupportedNetworkIds(): string[] {
 	return Object.keys(NETWORK_MAP);
 }
@@ -163,7 +158,7 @@ export async function getTokenBalances(
 		throw new Error("ALCHEMY_API_KEY not configured");
 	}
 
-	if (!isValidWalletAddress(walletAddress)) {
+	if (!isValidEvmAddress(walletAddress)) {
 		return [];
 	}
 
@@ -244,7 +239,7 @@ export async function getAllTokenBalances(
 	walletAddress: string,
 	cachedDecimals?: Map<string, number>,
 ): Promise<TokenBalance[]> {
-	if (!isValidWalletAddress(walletAddress)) {
+	if (!isValidEvmAddress(walletAddress)) {
 		throw new Error("Invalid wallet address format");
 	}
 

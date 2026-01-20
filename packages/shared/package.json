@@ -10,6 +10,10 @@
 		".": {
 			"types": "./dist/schemas.d.ts",
 			"default": "./dist/schemas.js"
+		},
+		"./validation": {
+			"types": "./dist/validation.d.ts",
+			"default": "./dist/validation.js"
 		}
 	},
 	"dependencies": {

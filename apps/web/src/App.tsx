@@ -1,3 +1,4 @@
+import { isValidEvmAddress } from "@repo/shared/validation";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,14 +20,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { fetchNetworks, fetchTokens } from "./api";
-
-// EVM wallet address validation
-const EVM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
-
-function isValidWalletAddress(address: string): boolean {
-	if (!address) return true; // Empty is valid (no filter)
-	return EVM_ADDRESS_REGEX.test(address);
-}
 
 function useDebouncedValue<T>(value: T, delay: number): T {
 	const [debouncedValue, setDebouncedValue] = useState(value);
@@ -75,7 +68,7 @@ export default function App() {
 	const [page, setPage] = useState(1);
 
 	const debouncedSearch = useDebouncedValue(search, 200);
-	const walletIsValid = isValidWalletAddress(wallet);
+	const walletIsValid = !wallet || isValidEvmAddress(wallet);
 
 	const { data: networks, isError: networksError } = useQuery({
 		queryKey: ["networks"],
