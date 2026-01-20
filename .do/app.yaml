@@ -33,6 +33,9 @@ services:
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
     envs:
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: "production"
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${db.DATABASE_URL}
