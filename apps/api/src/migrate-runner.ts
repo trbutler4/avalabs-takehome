@@ -12,17 +12,11 @@ async function runMigrations() {
 		process.exit(1);
 	}
 
-	const databaseUrl = process.env.DATABASE_URL;
-	if (!databaseUrl) {
-		throw new Error("DATABASE_URL is required");
-	}
-
-	// Append uselibpqcompat=true for standard PostgreSQL SSL behavior
-	// This is DigitalOcean's recommended fix for App Platform database connections
-	const separator = databaseUrl.includes("?") ? "&" : "?";
-	const connectionString = `${databaseUrl}${separator}uselibpqcompat=true`;
-
-	const client = new pg.Client({ connectionString });
+	const client = new pg.Client({
+		connectionString: process.env.DATABASE_URL,
+		// Allow self-signed certificates (DigitalOcean App Platform recommendation)
+		ssl: { rejectUnauthorized: false },
+	});
 
 	await client.connect();
 
