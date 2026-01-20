@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -13,8 +14,10 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
 	<StrictMode>
-		<QueryClientProvider client={queryClient}>
-			<App />
-		</QueryClientProvider>
+		<ErrorBoundary>
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>
+		</ErrorBoundary>
 	</StrictMode>,
 );
