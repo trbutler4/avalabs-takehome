@@ -20,13 +20,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { fetchNetworks, fetchTokens } from './api'
 
-// Wallet address validation
+// EVM wallet address validation
 const EVM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/
-const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
 
 function isValidWalletAddress(address: string): boolean {
   if (!address) return true // Empty is valid (no filter)
-  return EVM_ADDRESS_REGEX.test(address) || SOLANA_ADDRESS_REGEX.test(address)
+  return EVM_ADDRESS_REGEX.test(address)
 }
 
 function useDebouncedValue<T>(value: T, delay: number): T {
@@ -138,7 +137,7 @@ export default function App() {
               <div className="flex flex-col gap-1">
                 <Input
                   type="text"
-                  placeholder="Wallet address (EVM: 0x... or Solana)"
+                  placeholder="Wallet address (0x...)"
                   value={wallet}
                   onChange={(e) => {
                     setWallet(e.target.value)
@@ -148,7 +147,7 @@ export default function App() {
                 />
                 {!walletIsValid && (
                   <p className="text-sm text-destructive">
-                    Invalid wallet address. Enter a valid EVM (0x...) or Solana address.
+                    Invalid address. Enter a valid EVM address (0x + 40 hex characters).
                   </p>
                 )}
               </div>

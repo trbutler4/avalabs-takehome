@@ -1,8 +1,7 @@
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 
 // Map CoinGecko network IDs to Alchemy network names
-// EVM chains use alchemy_getTokenBalances
-const EVM_NETWORK_MAP: Record<string, string> = {
+const NETWORK_MAP: Record<string, string> = {
   // Major L1s
   'ethereum': 'eth-mainnet',
   'binance-smart-chain': 'bnb-mainnet',
@@ -34,20 +33,14 @@ const EVM_NETWORK_MAP: Record<string, string> = {
   'berachain': 'berachain-mainnet',
 }
 
-// Solana uses different RPC methods
-const SOLANA_NETWORK_MAP: Record<string, string> = {
-  'solana': 'solana-mainnet',
-}
-
-// Address validation patterns
+// EVM address validation
 const EVM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/
-const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
 
 export type TokenBalance = {
   contractAddress: string
   balance: string
   decimals: number
-  networkId?: string
+  networkId: string
 }
 
 // ERC-20 decimals() function selector
@@ -85,7 +78,6 @@ async function getTokenDecimals(
   for (let i = 0; i < contractAddresses.length; i++) {
     const result = results[i]
     if (result?.result && result.result !== '0x') {
-      // Parse the returned uint8 value
       const decimals = parseInt(result.result, 16)
       if (!isNaN(decimals) && decimals <= 18) {
         decimalsMap.set(contractAddresses[i].toLowerCase(), decimals)
@@ -103,36 +95,24 @@ async function getTokenDecimals(
   return decimalsMap
 }
 
-export type AddressType = 'evm' | 'solana' | 'unknown'
-
-export function detectAddressType(address: string): AddressType {
-  if (EVM_ADDRESS_REGEX.test(address)) return 'evm'
-  if (SOLANA_ADDRESS_REGEX.test(address)) return 'solana'
-  return 'unknown'
-}
-
 export function isValidWalletAddress(address: string): boolean {
-  return detectAddressType(address) !== 'unknown'
+  return EVM_ADDRESS_REGEX.test(address)
 }
 
 export function getSupportedNetworkIds(): string[] {
-  return [...Object.keys(EVM_NETWORK_MAP), ...Object.keys(SOLANA_NETWORK_MAP)]
+  return Object.keys(NETWORK_MAP)
 }
 
-export function getEvmNetworkIds(): string[] {
-  return Object.keys(EVM_NETWORK_MAP)
-}
-
-export function getSolanaNetworkIds(): string[] {
-  return Object.keys(SOLANA_NETWORK_MAP)
-}
-
-async function getEvmTokenBalances(networkId: string, walletAddress: string): Promise<TokenBalance[]> {
+export async function getTokenBalances(networkId: string, walletAddress: string): Promise<TokenBalance[]> {
   if (!ALCHEMY_API_KEY) {
     throw new Error('ALCHEMY_API_KEY not configured')
   }
 
-  const alchemyNetwork = EVM_NETWORK_MAP[networkId]
+  if (!isValidWalletAddress(walletAddress)) {
+    return []
+  }
+
+  const alchemyNetwork = NETWORK_MAP[networkId]
   if (!alchemyNetwork) {
     return []
   }
@@ -173,73 +153,14 @@ async function getEvmTokenBalances(networkId: string, walletAddress: string): Pr
   }))
 }
 
-async function getSolanaTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
-  if (!ALCHEMY_API_KEY) {
-    throw new Error('ALCHEMY_API_KEY not configured')
-  }
-
-  const url = `https://solana-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getTokenAccountsByOwner',
-      params: [
-        walletAddress,
-        { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' },
-        { encoding: 'jsonParsed' },
-      ],
-    }),
-  })
-
-  if (!res.ok) throw new Error(`Alchemy Solana API error: ${res.status}`)
-
-  const data = await res.json()
-  if (data.error) throw new Error(data.error.message)
-
-  return (data.result?.value || [])
-    .filter((account: any) => {
-      const amount = account.account?.data?.parsed?.info?.tokenAmount?.amount
-      return amount && amount !== '0'
-    })
-    .map((account: any) => ({
-      contractAddress: account.account.data.parsed.info.mint,
-      balance: account.account.data.parsed.info.tokenAmount.amount,
-      decimals: account.account.data.parsed.info.tokenAmount.decimals ?? 9,
-      networkId: 'solana',
-    }))
-}
-
-export async function getTokenBalances(networkId: string, walletAddress: string): Promise<TokenBalance[]> {
-  const addressType = detectAddressType(walletAddress)
-
-  if (networkId === 'solana') {
-    if (addressType !== 'solana') return []
-    return getSolanaTokenBalances(walletAddress)
-  }
-
-  if (addressType !== 'evm') return []
-  return getEvmTokenBalances(networkId, walletAddress)
-}
-
 export async function getAllTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
-  const addressType = detectAddressType(walletAddress)
-
-  if (addressType === 'unknown') {
+  if (!isValidWalletAddress(walletAddress)) {
     throw new Error('Invalid wallet address format')
   }
 
-  if (addressType === 'solana') {
-    return getSolanaTokenBalances(walletAddress)
-  }
-
-  // EVM address - query all EVM networks
-  const networkIds = getEvmNetworkIds()
+  const networkIds = getSupportedNetworkIds()
   const results = await Promise.all(
-    networkIds.map(networkId => getEvmTokenBalances(networkId, walletAddress).catch(() => []))
+    networkIds.map(networkId => getTokenBalances(networkId, walletAddress).catch(() => []))
   )
   return results.flat()
 }
