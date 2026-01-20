@@ -10,8 +10,20 @@ Full-stack app with React frontend and Node.js backend.
 nix develop                     # Optional: reproducible dev environment (Node.js 24, PostgreSQL 18)
 docker compose up -d            # Start PostgreSQL
 npm install                     # Install deps
-npm run migrate -w @repo/api    # Run database migrations (only needs to be done once)
+cp apps/api/.env.example apps/api/.env  # Configure environment variables
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/avalabs
+npm run migrate:up -w @repo/api # Run database migrations
 npm run dev                     # Start frontend + backend with hot reload
+```
+
+### Migrations
+
+Migrations use [node-pg-migrate](https://github.com/salsita/node-pg-migrate). `DATABASE_URL` must be set.
+
+```bash
+npm run -w @repo/api migrate:up              # Apply pending migrations
+npm run -w @repo/api migrate:down            # Rollback last migration
+npm run -w @repo/api migrate:create -- name  # Create new migration
 ```
 
 ## Production Deployment
