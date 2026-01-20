@@ -156,9 +156,10 @@ export default function App() {
 										setPage(1);
 									}}
 									aria-invalid={!walletIsValid}
+									aria-describedby={!walletIsValid ? "wallet-error" : undefined}
 								/>
 								{!walletIsValid && (
-									<p className="text-sm text-destructive">
+									<p id="wallet-error" className="text-sm text-destructive">
 										Invalid address. Enter a valid EVM address (0x + 40 hex
 										characters).
 									</p>
@@ -168,7 +169,11 @@ export default function App() {
 					</CardHeader>
 					<CardContent>
 						{hasError ? (
-							<div className="text-center py-8">
+							<div
+								className="text-center py-8"
+								role="alert"
+								aria-live="assertive"
+							>
 								<p className="text-destructive font-medium">
 									Failed to load data
 								</p>
@@ -177,7 +182,9 @@ export default function App() {
 								</p>
 							</div>
 						) : isLoading ? (
-							<p className="text-muted-foreground">Loading...</p>
+							<p className="text-muted-foreground" aria-live="polite">
+								Loading...
+							</p>
 						) : (
 							<>
 								<p className="text-sm text-muted-foreground mb-4">
