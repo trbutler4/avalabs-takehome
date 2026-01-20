@@ -4,7 +4,19 @@ import { sync } from './coingecko.js'
 
 const PORT = Number(process.env.PORT ?? 3000)
 
+function validateEnv() {
+  const required = ['DATABASE_URL', 'ALCHEMY_API_KEY']
+  const missing = required.filter(key => !process.env[key])
+
+  if (missing.length > 0) {
+    console.error(`Missing required environment variables: ${missing.join(', ')}`)
+    process.exit(1)
+  }
+}
+
 async function main() {
+  validateEnv()
+
   // Sync on startup if DB is empty
   const { count } = await db.one<{ count: string }>('SELECT COUNT(*) as count FROM networks')
   if (Number(count) === 0) {
