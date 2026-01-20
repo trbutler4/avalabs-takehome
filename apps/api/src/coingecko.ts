@@ -34,7 +34,7 @@ async function rateLimitedFetch(url: string) {
 
 	if (requestCount >= 30) {
 		const waitTime = 60_000 - (now - windowStart);
-		console.log(`Rate limit reached, waiting ${waitTime}ms`);
+		console.warn(`Rate limit reached, waiting ${waitTime}ms`);
 		await new Promise((r) => setTimeout(r, waitTime));
 		requestCount = 0;
 		windowStart = Date.now();
@@ -47,7 +47,7 @@ async function rateLimitedFetch(url: string) {
 }
 
 export async function syncNetworks() {
-	console.log("Syncing networks from CoinGecko...");
+	console.info("Syncing networks from CoinGecko...");
 	const platforms: CoinGeckoPlatform[] = await rateLimitedFetch(
 		`${COINGECKO_BASE}/asset_platforms`,
 	);
@@ -69,13 +69,13 @@ export async function syncNetworks() {
 			[p.id, p.chain_identifier, p.name, p.native_coin_id],
 		);
 	}
-	console.log(
+	console.info(
 		`Synced ${supportedPlatforms.length} networks (filtered from ${platforms.length} total)`,
 	);
 }
 
 export async function syncTokens() {
-	console.log("Syncing tokens from CoinGecko...");
+	console.info("Syncing tokens from CoinGecko...");
 	const coins: CoinGeckoCoin[] = await rateLimitedFetch(
 		`${COINGECKO_BASE}/coins/list?include_platform=true`,
 	);
@@ -103,7 +103,7 @@ export async function syncTokens() {
 			count++;
 		}
 	}
-	console.log(`Synced ${count} tokens`);
+	console.info(`Synced ${count} tokens`);
 }
 
 // Lock ID for preventing concurrent syncs across instances
@@ -117,7 +117,7 @@ export async function sync() {
 	);
 
 	if (!acquired) {
-		console.log("Another instance is already syncing, skipping...");
+		console.warn("Another instance is already syncing, skipping...");
 		return;
 	}
 
@@ -125,7 +125,7 @@ export async function sync() {
 		await syncNetworks();
 		await syncTokens();
 	} finally {
-		// Release the lock
-		await db.none("SELECT pg_advisory_unlock($1)", [SYNC_LOCK_ID]);
+		// Release the lock (returns boolean, so use oneOrNone)
+		await db.oneOrNone("SELECT pg_advisory_unlock($1)", [SYNC_LOCK_ID]);
 	}
 }

@@ -71,6 +71,10 @@ Omitted for now. At scale, Redis would cache common responses.
 
 In-memory rate limiting (express-rate-limit) works for single instances. For horizontal scaling with multiple replicas, use Redis store (`rate-limit-redis`) for shared state.
 
+### Logging
+
+Uses built-in `console.*` methods with appropriate log levels (`info`, `warn`, `error`). For production, consider structured logging with a library like [pino](https://github.com/pinojs/pino) and centralized log aggregation (Datadog, CloudWatch, etc.) for observability.
+
 ### Package Manager
 
 npm - avoiding unnecessary complexity.

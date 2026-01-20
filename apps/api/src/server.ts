@@ -24,16 +24,16 @@ async function main() {
 		"SELECT COUNT(*) as count FROM networks",
 	);
 	if (Number(count) === 0) {
-		console.log("Database empty, running initial sync...");
+		console.info("Database empty, running initial sync...");
 		await sync();
 	}
 
 	const server = app.listen(PORT, "0.0.0.0", () => {
-		console.log(`Server listening on http://0.0.0.0:${PORT}`);
+		console.info(`Server listening on http://0.0.0.0:${PORT}`);
 	});
 
 	const shutdown = () => {
-		console.log("\nShutting down...");
+		console.info("\nShutting down...");
 		server.closeAllConnections();
 		server.close(() => {
 			db.$pool.end().then(() => process.exit(0));
