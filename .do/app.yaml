@@ -39,9 +39,7 @@ services:
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${db.DATABASE_URL}
-      - key: ALCHEMY_API_KEY
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
+      # ALCHEMY_API_KEY managed via DigitalOcean UI to persist across spec updates
     health_check:
       http_path: /health
 
