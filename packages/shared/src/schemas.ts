@@ -22,10 +22,10 @@ export const TokenSchema = z.object({
 // Query params schema
 export const TokensQuerySchema = z.object({
   network_id: z.string().optional(),
-  search: z.string().optional(),
+  search: z.string().max(100).optional(),
   wallet: z.string().optional(),
-  page: z.coerce.number().default(1),
-  limit: z.coerce.number().default(50),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(50),
 })
 
 // Response schemas

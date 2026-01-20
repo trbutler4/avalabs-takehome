@@ -83,7 +83,26 @@ export async function syncTokens() {
   console.log(`Synced ${count} tokens`)
 }
 
+// Lock ID for preventing concurrent syncs across instances
+const SYNC_LOCK_ID = 1234567890
+
 export async function sync() {
-  await syncNetworks()
-  await syncTokens()
+  // Try to acquire advisory lock (non-blocking)
+  const { acquired } = await db.one<{ acquired: boolean }>(
+    'SELECT pg_try_advisory_lock($1) as acquired',
+    [SYNC_LOCK_ID]
+  )
+
+  if (!acquired) {
+    console.log('Another instance is already syncing, skipping...')
+    return
+  }
+
+  try {
+    await syncNetworks()
+    await syncTokens()
+  } finally {
+    // Release the lock
+    await db.none('SELECT pg_advisory_unlock($1)', [SYNC_LOCK_ID])
+  }
 }

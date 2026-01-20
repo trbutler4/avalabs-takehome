@@ -67,6 +67,10 @@ Omitted - React Query handles server state caching; no complex client state need
 
 Omitted for now. At scale, Redis would cache common responses.
 
+### Rate Limiting
+
+In-memory rate limiting (express-rate-limit) works for single instances. For horizontal scaling with multiple replicas, use Redis store (`rate-limit-redis`) for shared state.
+
 ### Package Manager
 
 npm - avoiding unnecessary complexity.
