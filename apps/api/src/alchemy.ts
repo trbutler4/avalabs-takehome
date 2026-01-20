@@ -101,7 +101,10 @@ async function getTokenDecimals(
 		const result = results[i];
 		if (result?.result && result.result !== "0x") {
 			const decimals = parseInt(result.result, 16);
-			if (!Number.isNaN(decimals) && decimals <= 18) {
+			// NOTE: ERC-20 decimals() returns uint8 (0-255). Most tokens use 18 or fewer,
+			// but some exotic tokens (e.g., YAM-V2) use up to 24. We accept the full
+			// uint8 range for spec compliance, though >18 is a major edge case.
+			if (!Number.isNaN(decimals) && decimals <= 255) {
 				decimalsMap.set(contractAddresses[i].toLowerCase(), decimals);
 			}
 		}
