@@ -3,7 +3,12 @@ const path = require("node:path");
 
 const ssl =
 	process.env.DB_SSL === "true"
-		? { ca: fs.readFileSync(path.join(__dirname, "certs", "ca-certificate.crt"), "utf-8") }
+		? {
+				ca: fs.readFileSync(
+					path.join(__dirname, "certs", "ca-certificate.crt"),
+					"utf-8",
+				),
+			}
 		: false;
 
 module.exports = {
