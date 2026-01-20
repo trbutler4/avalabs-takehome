@@ -16,6 +16,7 @@ export const TokenSchema = z.object({
   contract_address: z.string().nullable(),
   network_id: z.string(),
   balance: z.string().optional(),
+  decimals: z.number().optional(),
 })
 
 // Query params schema

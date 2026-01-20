@@ -28,6 +28,7 @@ export const TokenSchema = BaseTokenSchema.extend({
   contract_address: z.string().nullable().openapi({ example: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' }),
   network_id: z.string().openapi({ example: 'ethereum' }),
   balance: z.string().optional().openapi({ example: '1000000000000000000' }),
+  decimals: z.number().optional().openapi({ example: 18 }),
 }).openapi('Token')
 
 export const TokensResponseSchema = z.object({

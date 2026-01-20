@@ -46,7 +46,61 @@ const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
 export type TokenBalance = {
   contractAddress: string
   balance: string
+  decimals: number
   networkId?: string
+}
+
+// ERC-20 decimals() function selector
+const DECIMALS_SELECTOR = '0x313ce567'
+
+async function getTokenDecimals(
+  alchemyNetwork: string,
+  contractAddresses: string[]
+): Promise<Map<string, number>> {
+  if (!ALCHEMY_API_KEY || contractAddresses.length === 0) {
+    return new Map()
+  }
+
+  const url = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
+
+  // Batch eth_call requests for all tokens
+  const calls = contractAddresses.map((address, index) => ({
+    jsonrpc: '2.0',
+    id: index,
+    method: 'eth_call',
+    params: [{ to: address, data: DECIMALS_SELECTOR }, 'latest'],
+  }))
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(calls),
+  })
+
+  if (!res.ok) return new Map()
+
+  const results = await res.json()
+  const decimalsMap = new Map<string, number>()
+
+  for (let i = 0; i < contractAddresses.length; i++) {
+    const result = results[i]
+    if (result?.result && result.result !== '0x') {
+      // Parse the returned uint8 value
+      const decimals = parseInt(result.result, 16)
+      if (!isNaN(decimals) && decimals <= 18) {
+        decimalsMap.set(contractAddresses[i].toLowerCase(), decimals)
+      }
+    }
+  }
+
+  // Default to 18 for tokens that didn't return decimals
+  for (const address of contractAddresses) {
+    if (!decimalsMap.has(address.toLowerCase())) {
+      decimalsMap.set(address.toLowerCase(), 18)
+    }
+  }
+
+  return decimalsMap
 }
 
 export type AddressType = 'evm' | 'solana' | 'unknown'
@@ -101,13 +155,22 @@ async function getEvmTokenBalances(networkId: string, walletAddress: string): Pr
   const data = await res.json()
   if (data.error) throw new Error(data.error.message)
 
-  return data.result.tokenBalances
-    .filter((t: any) => t.tokenBalance !== '0x0000000000000000000000000000000000000000000000000000000000000000')
-    .map((t: any) => ({
-      contractAddress: t.contractAddress.toLowerCase(),
-      balance: t.tokenBalance,
-      networkId,
-    }))
+  const nonZeroBalances = data.result.tokenBalances.filter(
+    (t: any) => t.tokenBalance !== '0x0000000000000000000000000000000000000000000000000000000000000000'
+  )
+
+  if (nonZeroBalances.length === 0) return []
+
+  // Fetch decimals for all tokens in batch
+  const contractAddresses = nonZeroBalances.map((t: any) => t.contractAddress)
+  const decimalsMap = await getTokenDecimals(alchemyNetwork, contractAddresses)
+
+  return nonZeroBalances.map((t: any) => ({
+    contractAddress: t.contractAddress.toLowerCase(),
+    balance: t.tokenBalance,
+    decimals: decimalsMap.get(t.contractAddress.toLowerCase()) ?? 18,
+    networkId,
+  }))
 }
 
 async function getSolanaTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
@@ -145,6 +208,7 @@ async function getSolanaTokenBalances(walletAddress: string): Promise<TokenBalan
     .map((account: any) => ({
       contractAddress: account.account.data.parsed.info.mint,
       balance: account.account.data.parsed.info.tokenAmount.amount,
+      decimals: account.account.data.parsed.info.tokenAmount.decimals ?? 9,
       networkId: 'solana',
     }))
 }

@@ -51,10 +51,14 @@ router.get('/', async (req, res) => {
         [netId, addresses]
       )
 
-      const tokensWithBalances = rows.map(token => ({
-        ...token,
-        balance: netBalances.find(b => b.contractAddress === token.contract_address?.toLowerCase())?.balance,
-      }))
+      const tokensWithBalances = rows.map(token => {
+        const balanceInfo = netBalances.find(b => b.contractAddress === token.contract_address?.toLowerCase())
+        return {
+          ...token,
+          balance: balanceInfo?.balance,
+          decimals: balanceInfo?.decimals,
+        }
+      })
 
       tokens = tokens.concat(tokensWithBalances)
       total += rows.length

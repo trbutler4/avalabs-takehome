@@ -40,6 +40,32 @@ function useDebouncedValue<T>(value: T, delay: number): T {
   return debouncedValue
 }
 
+function formatBalance(balance: string | undefined, decimals: number | undefined): string {
+  if (!balance) return '-'
+
+  try {
+    // Convert hex to bigint if needed (EVM balances are hex)
+    const value = balance.startsWith('0x') ? BigInt(balance) : BigInt(balance)
+    if (value === 0n) return '0'
+
+    const dec = decimals ?? 18
+    const divisor = 10n ** BigInt(dec)
+    const whole = value / divisor
+    const remainder = value % divisor
+
+    // Format with up to 6 decimal places
+    const remainderStr = remainder.toString().padStart(dec, '0')
+    const decimalsToShow = remainderStr.slice(0, 6).replace(/0+$/, '')
+
+    if (decimalsToShow) {
+      return `${whole.toLocaleString()}.${decimalsToShow}`
+    }
+    return whole.toLocaleString()
+  } catch {
+    return balance
+  }
+}
+
 export default function App() {
   const [selectedNetwork, setSelectedNetwork] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -164,7 +190,7 @@ export default function App() {
                           </TableCell>
                           {wallet && (
                             <TableCell className="font-mono">
-                              {token.balance ?? '-'}
+                              {formatBalance(token.balance, token.decimals)}
                             </TableCell>
                           )}
                         </TableRow>
