@@ -23,6 +23,21 @@ async function runMigrations() {
 	}
 
 	const ssl = getSSLConfig();
+	console.log("DB_SSL:", process.env.DB_SSL);
+	console.log(
+		"SSL config:",
+		ssl
+			? {
+					ca: `${ssl.ca.substring(0, 50)}...`,
+					rejectUnauthorized: ssl.rejectUnauthorized,
+				}
+			: false,
+	);
+	console.log(
+		"DATABASE_URL:",
+		process.env.DATABASE_URL?.replace(/:[^:@]+@/, ":****@"),
+	);
+
 	const client = new pg.Client({
 		connectionString: process.env.DATABASE_URL,
 		ssl,
