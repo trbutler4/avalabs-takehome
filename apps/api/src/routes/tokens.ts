@@ -40,9 +40,18 @@ router.get('/', async (req, res) => {
 
   // If wallet is provided, get balances and filter
   if (wallet) {
+    // Load cached decimals from DB to avoid unnecessary RPC calls
+    const cachedRows = await db.manyOrNone<{ contract_address: string; decimals: number }>(
+      `SELECT LOWER(contract_address) as contract_address, decimals
+       FROM tokens
+       WHERE decimals IS NOT NULL${network_id ? ' AND network_id = $1' : ''}`,
+      network_id ? [network_id] : []
+    )
+    const cachedDecimals = new Map(cachedRows.map(r => [r.contract_address, r.decimals]))
+
     const balances = network_id
-      ? await getTokenBalances(network_id, wallet)
-      : await getAllTokenBalances(wallet)
+      ? await getTokenBalances(network_id, wallet, cachedDecimals)
+      : await getAllTokenBalances(wallet, cachedDecimals)
 
     if (balances.length === 0) {
       res.json({ tokens: [], total: 0 })
@@ -84,8 +93,8 @@ router.get('/', async (req, res) => {
       if (erc20Balances.length === 0) continue
 
       const addresses = erc20Balances.map(b => b.contractAddress)
-      const rows = await db.manyOrNone<Token>(
-        `SELECT t.id, t.symbol, t.name, t.contract_address, t.network_id
+      const rows = await db.manyOrNone<Token & { decimals: number | null }>(
+        `SELECT t.id, t.symbol, t.name, t.contract_address, t.network_id, t.decimals
          FROM tokens t
          WHERE t.network_id = $1
            AND LOWER(t.contract_address) = ANY($2)
@@ -95,12 +104,25 @@ router.get('/', async (req, res) => {
 
       const tokensWithBalances = rows.map(token => {
         const balanceInfo = erc20Balances.find(b => b.contractAddress === token.contract_address?.toLowerCase())
+        // Use cached DB decimals if available, otherwise use RPC decimals
+        const decimals = token.decimals ?? balanceInfo?.decimals ?? 18
         return {
           ...token,
           balance: balanceInfo?.balance,
-          decimals: balanceInfo?.decimals,
+          decimals,
         }
       })
+
+      // Cache newly discovered decimals to DB (fire and forget)
+      for (const token of tokensWithBalances) {
+        const dbToken = rows.find(r => r.id === token.id)
+        if (dbToken && dbToken.decimals === null && token.decimals !== undefined) {
+          db.none(
+            'UPDATE tokens SET decimals = $1 WHERE id = $2 AND network_id = $3',
+            [token.decimals, token.id, netId]
+          ).catch(() => {}) // Ignore errors, this is just caching
+        }
+      }
 
       tokens = tokens.concat(tokensWithBalances)
       total += rows.length

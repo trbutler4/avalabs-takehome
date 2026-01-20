@@ -133,7 +133,11 @@ async function getNativeBalance(alchemyNetwork: string, walletAddress: string): 
   return data.result
 }
 
-export async function getTokenBalances(networkId: string, walletAddress: string): Promise<TokenBalance[]> {
+export async function getTokenBalances(
+  networkId: string,
+  walletAddress: string,
+  cachedDecimals?: Map<string, number>
+): Promise<TokenBalance[]> {
   if (!ALCHEMY_API_KEY) {
     throw new Error('ALCHEMY_API_KEY not configured')
   }
@@ -186,15 +190,22 @@ export async function getTokenBalances(networkId: string, walletAddress: string)
   )
 
   if (nonZeroBalances.length > 0) {
-    // Fetch decimals for all tokens in batch
-    const contractAddresses = nonZeroBalances.map((t: any) => t.contractAddress)
-    const decimalsMap = await getTokenDecimals(alchemyNetwork, contractAddresses)
+    // Only fetch decimals via RPC for tokens not in cache
+    const uncachedAddresses = nonZeroBalances
+      .map((t: any) => t.contractAddress.toLowerCase())
+      .filter((addr: string) => !cachedDecimals?.has(addr))
+
+    const rpcDecimals = uncachedAddresses.length > 0
+      ? await getTokenDecimals(alchemyNetwork, uncachedAddresses)
+      : new Map<string, number>()
 
     for (const t of nonZeroBalances) {
+      const addr = t.contractAddress.toLowerCase()
+      const decimals = cachedDecimals?.get(addr) ?? rpcDecimals.get(addr) ?? 18
       results.push({
-        contractAddress: t.contractAddress.toLowerCase(),
+        contractAddress: addr,
         balance: t.tokenBalance,
-        decimals: decimalsMap.get(t.contractAddress.toLowerCase()) ?? 18,
+        decimals,
         networkId,
       })
     }
@@ -203,14 +214,17 @@ export async function getTokenBalances(networkId: string, walletAddress: string)
   return results
 }
 
-export async function getAllTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
+export async function getAllTokenBalances(
+  walletAddress: string,
+  cachedDecimals?: Map<string, number>
+): Promise<TokenBalance[]> {
   if (!isValidWalletAddress(walletAddress)) {
     throw new Error('Invalid wallet address format')
   }
 
   const networkIds = getSupportedNetworkIds()
   const results = await Promise.all(
-    networkIds.map(networkId => getTokenBalances(networkId, walletAddress).catch(() => []))
+    networkIds.map(networkId => getTokenBalances(networkId, walletAddress, cachedDecimals).catch(() => []))
   )
   return results.flat()
 }
