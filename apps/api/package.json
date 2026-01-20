@@ -7,7 +7,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "migrate": "node --env-file=.env --import tsx src/migrate.ts"
+    "migrate": "dotenv -q -- node-pg-migrate -m migrations -j ts",
+    "migrate:up": "npm run migrate -- up",
+    "migrate:down": "npm run migrate -- down",
+    "migrate:create": "node-pg-migrate -m migrations -j ts create"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.4.0",
@@ -23,6 +26,8 @@
     "@types/express": "^5.0.0",
     "@types/helmet": "^0.0.48",
     "@types/node": "^22.10.5",
+    "dotenv-cli": "^11.0.0",
+    "node-pg-migrate": "^8.0.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
