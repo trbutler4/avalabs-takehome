@@ -34,8 +34,16 @@ async function main() {
 
 	const shutdown = () => {
 		console.info("\nShutting down...");
+
+		// Force exit after 10 seconds if graceful shutdown hangs
+		const forceExit = setTimeout(() => {
+			console.error("Shutdown timed out, forcing exit");
+			process.exit(1);
+		}, 10000);
+
 		server.closeAllConnections();
 		server.close(() => {
+			clearTimeout(forceExit);
 			db.$pool.end().then(() => process.exit(0));
 		});
 	};
