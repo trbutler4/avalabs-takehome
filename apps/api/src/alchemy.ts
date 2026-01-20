@@ -61,6 +61,7 @@ interface AlchemyTokenBalancesResult {
 }
 
 // ERC-20 decimals() function selector
+// NOTE: of course, in a more feature rich application that supports more complicated things we would use the ERC20 abi. This is fine for our use case here.
 const DECIMALS_SELECTOR = "0x313ce567";
 
 async function getTokenDecimals(
@@ -116,9 +117,9 @@ export function getSupportedNetworkIds(): string[] {
 	return Object.keys(NETWORK_MAP);
 }
 
-// Native token uses zero address as identifier
+// EIP-7528: Standard address for representing native tokens in ERC-20 contexts (https://eips.ethereum.org/EIPS/eip-7528)
 export const NATIVE_TOKEN_ADDRESS =
-	"0x0000000000000000000000000000000000000000";
+	"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
 async function getNativeBalance(
 	alchemyNetwork: string,
