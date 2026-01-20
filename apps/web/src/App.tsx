@@ -1,6 +1,6 @@
 import { isValidEvmAddress } from "@repo/shared/validation";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,13 @@ export default function App() {
 	const [search, setSearch] = useState("");
 	const [wallet, setWallet] = useState("");
 	const [page, setPage] = useState(1);
+	const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+	const copyToClipboard = useCallback(async (address: string) => {
+		await navigator.clipboard.writeText(address);
+		setCopiedAddress(address);
+		setTimeout(() => setCopiedAddress(null), 2000);
+	}, []);
 
 	const debouncedSearch = useDebouncedValue(search, 200);
 	const walletIsValid = !wallet || isValidEvmAddress(wallet);
@@ -218,7 +225,22 @@ export default function App() {
 														{token.network_id}
 													</TableCell>
 													<TableCell className="font-mono text-xs text-muted-foreground">
-														{token.contract_address?.slice(0, 10)}...
+														{token.contract_address ? (
+															<button
+																type="button"
+																onClick={() =>
+																	copyToClipboard(token.contract_address!)
+																}
+																className="hover:text-foreground cursor-pointer transition-colors"
+																title={`Copy ${token.contract_address}`}
+															>
+																{copiedAddress === token.contract_address
+																	? "Copied!"
+																	: `${token.contract_address.slice(0, 10)}...`}
+															</button>
+														) : (
+															<span className="italic">Native</span>
+														)}
 													</TableCell>
 													{wallet && (
 														<TableCell className="font-mono">
