@@ -43,7 +43,7 @@ services:
         scope: RUN_TIME
         value: "true"
       - key: ALCHEMY_API_KEY
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
     health_check:
       http_path: /health
