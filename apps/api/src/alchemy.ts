@@ -3,16 +3,15 @@ import { isValidEvmAddress } from "@repo/shared/validation";
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 
 // Map CoinGecko network IDs to Alchemy network names
+// Only includes networks that support Alchemy's Enhanced APIs (alchemy_getTokenBalances)
 const NETWORK_MAP: Record<string, string> = {
 	// Major L1s
 	ethereum: "eth-mainnet",
 	"binance-smart-chain": "bnb-mainnet",
 	avalanche: "avax-mainnet",
-	fantom: "fantom-mainnet",
 	gnosis: "gnosis-mainnet",
 	// Polygon ecosystem
 	"polygon-pos": "polygon-mainnet",
-	"polygon-zkevm": "polygonzkevm-mainnet",
 	// Optimism ecosystem
 	"optimistic-ethereum": "opt-mainnet",
 	base: "base-mainnet",
@@ -26,11 +25,8 @@ const NETWORK_MAP: Record<string, string> = {
 	blast: "blast-mainnet",
 	zksync: "zksync-mainnet",
 	scroll: "scroll-mainnet",
-	mantle: "mantle-mainnet",
-	mode: "mode-mainnet",
 	// Additional chains
 	celo: "celo-mainnet",
-	moonbeam: "moonbeam-mainnet",
 	apechain: "apechain-mainnet",
 	berachain: "berachain-mainnet",
 };

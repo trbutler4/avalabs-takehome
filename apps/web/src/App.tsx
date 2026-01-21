@@ -26,6 +26,7 @@ import { fetchAllTokens, fetchNetworks, fetchTokens } from "./api";
 const DEFAULT_DECIMALS = 18; // Standard for EVM native tokens and most ERC-20s
 const DISPLAY_DECIMALS = 6; // Max decimal places to show in UI
 const MIN_DISPLAY_THRESHOLD = "<0.00001"; // Shown when balance is non-zero but too small
+const PAGE_SIZE = 50;
 
 function useDebouncedValue<T>(value: T, delay: number): T {
 	const [debouncedValue, setDebouncedValue] = useState(value);
@@ -89,9 +90,12 @@ export default function App() {
 
 	const debouncedSearch = useDebouncedValue(search, 200);
 	const walletIsValid = !wallet || isValidEvmAddress(wallet);
-	const pageSize = 50;
 
-	const { data: networks, isError: networksError } = useQuery({
+	const {
+		data: networks,
+		isError: networksError,
+		refetch: refetchNetworks,
+	} = useQuery({
 		queryKey: ["networks"],
 		queryFn: fetchNetworks,
 	});
@@ -101,6 +105,7 @@ export default function App() {
 		data: walletTokens,
 		isLoading: walletLoading,
 		isError: walletError,
+		refetch: refetchWalletTokens,
 	} = useQuery({
 		queryKey: ["tokens", "wallet", selectedNetwork, wallet],
 		queryFn: () =>
@@ -116,6 +121,7 @@ export default function App() {
 		data: browseTokensData,
 		isLoading: browseLoading,
 		isError: browseError,
+		refetch: refetchBrowseTokens,
 	} = useQuery({
 		queryKey: ["tokens", "browse", selectedNetwork, debouncedSearch, page],
 		queryFn: () =>
@@ -123,7 +129,7 @@ export default function App() {
 				network_id: selectedNetwork === "all" ? undefined : selectedNetwork,
 				search: debouncedSearch || undefined,
 				page,
-				limit: pageSize,
+				limit: PAGE_SIZE,
 			}),
 		enabled: !wallet,
 	});
@@ -154,15 +160,15 @@ export default function App() {
 			return 4;
 		};
 
-		return filtered.sort(
+		return filtered.toSorted(
 			(a, b) => relevance(a) - relevance(b) || a.name.localeCompare(b.name),
 		);
 	}, [walletTokens, debouncedSearch]);
 
 	// Client-side pagination for wallet tokens
 	const paginatedWalletTokens = useMemo(() => {
-		const start = (page - 1) * pageSize;
-		return filteredWalletTokens.slice(start, start + pageSize);
+		const start = (page - 1) * PAGE_SIZE;
+		return filteredWalletTokens.slice(start, start + PAGE_SIZE);
 	}, [filteredWalletTokens, page]);
 
 	// Unified data for rendering
@@ -255,11 +261,27 @@ export default function App() {
 								<p className="text-sm text-muted-foreground mt-1">
 									Please try again later
 								</p>
+								<Button
+									variant="outline"
+									className="mt-4"
+									onClick={() => {
+										if (networksError) refetchNetworks();
+										if (wallet && walletError) refetchWalletTokens();
+										if (!wallet && browseError) refetchBrowseTokens();
+									}}
+								>
+									Retry
+								</Button>
 							</div>
 						) : isLoading ? (
-							<p className="text-muted-foreground" aria-live="polite">
-								Loading...
-							</p>
+							<output className="block space-y-3" aria-label="Loading tokens">
+								{[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+									<div
+										key={n}
+										className="h-10 bg-muted animate-pulse rounded"
+									/>
+								))}
+							</output>
 						) : (
 							<>
 								<p className="text-sm text-muted-foreground mb-4">
