@@ -1,7 +1,7 @@
 import type { Token } from "@repo/shared";
 import { isValidEvmAddress } from "@repo/shared/validation";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,16 @@ import { fetchAllTokens, fetchNetworks, fetchTokens } from "./api";
 const DEFAULT_DECIMALS = 18; // Standard for EVM native tokens and most ERC-20s
 const DISPLAY_DECIMALS = 6; // Max decimal places to show in UI
 const MIN_DISPLAY_THRESHOLD = "<0.00001"; // Shown when balance is non-zero but too small
+const PAGE_SIZE = 50;
+
+// Static header hoisted outside component to avoid recreation on each render
+const Header = (
+	<header className="bg-primary text-primary-foreground py-4 px-6 mb-6">
+		<h1 className="text-2xl font-bold w-3/4 max-w-6xl mx-auto">
+			Asset Registry
+		</h1>
+	</header>
+);
 
 function useDebouncedValue<T>(value: T, delay: number): T {
 	const [debouncedValue, setDebouncedValue] = useState(value);
@@ -74,24 +84,67 @@ function formatBalance(
 	}
 }
 
+const TokenRow = memo(function TokenRow({
+	token,
+	showBalance,
+}: {
+	token: Token;
+	showBalance: boolean;
+}) {
+	const [copied, setCopied] = useState(false);
+	const addr = token.contract_address;
+
+	const handleCopy = async () => {
+		if (!addr) return;
+		await navigator.clipboard.writeText(addr);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
+	return (
+		<TableRow>
+			<TableCell className="font-mono font-medium">{token.symbol}</TableCell>
+			<TableCell>{token.name}</TableCell>
+			<TableCell className="text-muted-foreground">
+				{token.network_id}
+			</TableCell>
+			<TableCell className="font-mono text-xs text-muted-foreground">
+				{addr ? (
+					<button
+						type="button"
+						onClick={handleCopy}
+						className="hover:text-foreground cursor-pointer transition-colors"
+						title={`Copy ${addr}`}
+					>
+						{copied ? "Copied!" : `${addr.slice(0, 10)}...`}
+					</button>
+				) : (
+					<span className="italic">Native</span>
+				)}
+			</TableCell>
+			{showBalance && (
+				<TableCell className="font-mono">
+					{formatBalance(token.balance, token.decimals)}
+				</TableCell>
+			)}
+		</TableRow>
+	);
+});
+
 export default function App() {
 	const [selectedNetwork, setSelectedNetwork] = useState<string>("all");
 	const [search, setSearch] = useState("");
 	const [wallet, setWallet] = useState("");
 	const [page, setPage] = useState(1);
-	const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
-
-	const copyToClipboard = useCallback(async (address: string) => {
-		await navigator.clipboard.writeText(address);
-		setCopiedAddress(address);
-		setTimeout(() => setCopiedAddress(null), 2000);
-	}, []);
 
 	const debouncedSearch = useDebouncedValue(search, 200);
 	const walletIsValid = !wallet || isValidEvmAddress(wallet);
-	const pageSize = 50;
 
-	const { data: networks, isError: networksError } = useQuery({
+	const {
+		data: networks,
+		isError: networksError,
+		refetch: refetchNetworks,
+	} = useQuery({
 		queryKey: ["networks"],
 		queryFn: fetchNetworks,
 	});
@@ -101,6 +154,7 @@ export default function App() {
 		data: walletTokens,
 		isLoading: walletLoading,
 		isError: walletError,
+		refetch: refetchWalletTokens,
 	} = useQuery({
 		queryKey: ["tokens", "wallet", selectedNetwork, wallet],
 		queryFn: () =>
@@ -116,6 +170,7 @@ export default function App() {
 		data: browseTokensData,
 		isLoading: browseLoading,
 		isError: browseError,
+		refetch: refetchBrowseTokens,
 	} = useQuery({
 		queryKey: ["tokens", "browse", selectedNetwork, debouncedSearch, page],
 		queryFn: () =>
@@ -123,7 +178,7 @@ export default function App() {
 				network_id: selectedNetwork === "all" ? undefined : selectedNetwork,
 				search: debouncedSearch || undefined,
 				page,
-				limit: pageSize,
+				limit: PAGE_SIZE,
 			}),
 		enabled: !wallet,
 	});
@@ -154,15 +209,15 @@ export default function App() {
 			return 4;
 		};
 
-		return filtered.sort(
+		return filtered.toSorted(
 			(a, b) => relevance(a) - relevance(b) || a.name.localeCompare(b.name),
 		);
 	}, [walletTokens, debouncedSearch]);
 
 	// Client-side pagination for wallet tokens
 	const paginatedWalletTokens = useMemo(() => {
-		const start = (page - 1) * pageSize;
-		return filteredWalletTokens.slice(start, start + pageSize);
+		const start = (page - 1) * PAGE_SIZE;
+		return filteredWalletTokens.slice(start, start + PAGE_SIZE);
 	}, [filteredWalletTokens, page]);
 
 	// Unified data for rendering
@@ -176,11 +231,7 @@ export default function App() {
 
 	return (
 		<div className="min-h-screen bg-muted/30">
-			<header className="bg-primary text-primary-foreground py-4 px-6 mb-6">
-				<h1 className="text-2xl font-bold w-3/4 max-w-6xl mx-auto">
-					Asset Registry
-				</h1>
-			</header>
+			{Header}
 			<main className="px-6 pb-6 w-3/4 max-w-6xl mx-auto">
 				<Card>
 					<CardHeader className="pb-4">
@@ -253,11 +304,27 @@ export default function App() {
 								<p className="text-sm text-muted-foreground mt-1">
 									Please try again later
 								</p>
+								<Button
+									variant="outline"
+									className="mt-4"
+									onClick={() => {
+										if (networksError) refetchNetworks();
+										if (wallet && walletError) refetchWalletTokens();
+										if (!wallet && browseError) refetchBrowseTokens();
+									}}
+								>
+									Retry
+								</Button>
 							</div>
 						) : isLoading ? (
-							<p className="text-muted-foreground" aria-live="polite">
-								Loading...
-							</p>
+							<output className="block space-y-3" aria-label="Loading tokens">
+								{[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+									<div
+										key={n}
+										className="h-10 bg-muted animate-pulse rounded"
+									/>
+								))}
+							</output>
 						) : (
 							<>
 								<p className="text-sm text-muted-foreground mb-4">
@@ -277,39 +344,11 @@ export default function App() {
 										</TableHeader>
 										<TableBody>
 											{tokensData?.tokens.map((token) => (
-												<TableRow key={`${token.id}-${token.network_id}`}>
-													<TableCell className="font-mono font-medium">
-														{token.symbol}
-													</TableCell>
-													<TableCell>{token.name}</TableCell>
-													<TableCell className="text-muted-foreground">
-														{token.network_id}
-													</TableCell>
-													<TableCell className="font-mono text-xs text-muted-foreground">
-														{(() => {
-															const addr = token.contract_address;
-															return addr ? (
-																<button
-																	type="button"
-																	onClick={() => copyToClipboard(addr)}
-																	className="hover:text-foreground cursor-pointer transition-colors"
-																	title={`Copy ${addr}`}
-																>
-																	{copiedAddress === addr
-																		? "Copied!"
-																		: `${addr.slice(0, 10)}...`}
-																</button>
-															) : (
-																<span className="italic">Native</span>
-															);
-														})()}
-													</TableCell>
-													{wallet && (
-														<TableCell className="font-mono">
-															{formatBalance(token.balance, token.decimals)}
-														</TableCell>
-													)}
-												</TableRow>
+												<TokenRow
+													key={`${token.id}-${token.network_id}`}
+													token={token}
+													showBalance={!!wallet}
+												/>
 											))}
 										</TableBody>
 									</Table>
