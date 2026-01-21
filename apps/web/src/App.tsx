@@ -176,17 +176,19 @@ export default function App() {
 
 	return (
 		<div className="min-h-screen bg-muted/30">
-			<header className="bg-primary text-primary-foreground py-4 px-6 mb-6">
-				<h1 className="text-2xl font-bold w-3/4 max-w-6xl mx-auto">
+			<header className="bg-primary text-primary-foreground py-4 px-4 sm:px-6 mb-4 sm:mb-6">
+				<h1 className="text-xl sm:text-2xl font-bold max-w-6xl mx-auto">
 					Asset Registry
 				</h1>
 			</header>
-			<main className="px-6 pb-6 w-3/4 max-w-6xl mx-auto">
-				<Card>
-					<CardHeader className="pb-4">
-						<CardTitle className="text-lg">Token Explorer</CardTitle>
-						<div className="flex flex-col gap-4 pt-2">
-							<div className="flex gap-4">
+			<main className="px-4 sm:px-6 pb-6 max-w-6xl mx-auto">
+				<Card className="py-4 sm:py-6">
+					<CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+						<CardTitle className="text-base sm:text-lg">
+							Token Explorer
+						</CardTitle>
+						<div className="flex flex-col gap-3 sm:gap-4 pt-2">
+							<div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
 								<Select
 									value={selectedNetwork}
 									onValueChange={(value) => {
@@ -194,7 +196,7 @@ export default function App() {
 										setPage(1);
 									}}
 								>
-									<SelectTrigger className="w-[200px]">
+									<SelectTrigger className="w-full sm:w-[200px]">
 										<SelectValue placeholder="All Networks" />
 									</SelectTrigger>
 									<SelectContent>
@@ -240,7 +242,7 @@ export default function App() {
 							</div>
 						</div>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="px-4 sm:px-6">
 						{hasError ? (
 							<div
 								className="text-center py-8"
@@ -264,8 +266,8 @@ export default function App() {
 									{tokensData?.total ?? 0} tokens found
 								</p>
 
-								<div className="rounded-md border">
-									<Table>
+								<div className="rounded-md border overflow-x-auto">
+									<Table className="min-w-[500px]">
 										<TableHeader>
 											<TableRow className="bg-muted/50">
 												<TableHead>Symbol</TableHead>
@@ -318,15 +320,17 @@ export default function App() {
 								<div className="flex gap-2 mt-4 items-center justify-between">
 									<Button
 										variant="outline"
+										size="sm"
 										disabled={page === 1}
 										onClick={() => setPage((p) => p - 1)}
 									>
 										Previous
 									</Button>
-									<span className="text-sm text-muted-foreground">
+									<span className="text-xs sm:text-sm text-muted-foreground">
 										Page {page}
 									</span>
 									<Button
+										size="sm"
 										disabled={(tokensData?.tokens.length ?? 0) < 50}
 										onClick={() => setPage((p) => p + 1)}
 									>
