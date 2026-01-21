@@ -334,10 +334,8 @@ export default function App() {
 																{token.name}
 															</span>
 														</TableCell>
-														<TableCell className="text-muted-foreground">
-															{token.network_id}
-														</TableCell>
-														<TableCell className="font-mono text-xs text-muted-foreground overflow-hidden">
+														<TableCell>{token.network_id}</TableCell>
+														<TableCell className="font-mono overflow-hidden">
 															{(() => {
 																const addr = token.contract_address;
 																if (!addr)
