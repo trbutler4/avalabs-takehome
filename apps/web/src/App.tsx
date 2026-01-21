@@ -293,14 +293,16 @@ export default function App() {
 								</p>
 
 								<div className="rounded-md border overflow-x-auto">
-									<Table className="min-w-[500px]">
+									<Table className="min-w-[500px] table-fixed">
 										<TableHeader>
 											<TableRow className="bg-muted/50">
-												<TableHead>Symbol</TableHead>
-												<TableHead>Name</TableHead>
-												<TableHead>Network</TableHead>
-												<TableHead>Contract</TableHead>
-												{wallet && <TableHead>Balance</TableHead>}
+												<TableHead className="w-1/5">Symbol</TableHead>
+												<TableHead className="w-1/5">Name</TableHead>
+												<TableHead className="w-1/5">Network</TableHead>
+												<TableHead className="w-1/5">Contract</TableHead>
+												{wallet && (
+													<TableHead className="w-1/5">Balance</TableHead>
+												)}
 											</TableRow>
 										</TableHeader>
 										<TableBody>
@@ -353,7 +355,7 @@ export default function App() {
 																		{copiedAddress === addr ? (
 																			<CheckIcon
 																				aria-hidden="true"
-																				className="size-3.5 text-green-600 transition-opacity"
+																				className="size-3.5 text-primary transition-opacity"
 																			/>
 																		) : (
 																			<CopyIcon
