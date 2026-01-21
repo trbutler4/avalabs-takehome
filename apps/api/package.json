@@ -7,6 +7,7 @@
 		"build": "tsc",
 		"start": "node dist/server.js",
 		"typecheck": "tsc --noEmit",
+		"migrate": "node --import tsx src/migrate-runner.ts",
 		"migrate:up": "node --env-file=.env --import tsx src/migrate-runner.ts up",
 		"migrate:down": "node --env-file=.env --import tsx src/migrate-runner.ts down",
 		"migrate:create": "node-pg-migrate -m migrations -j ts create"
