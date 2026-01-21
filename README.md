@@ -47,7 +47,7 @@ Deployed on Digital Ocean App Platform with managed PostgreSQL.
 
 - **Background Token Sync** - Currently only syncs on startup when DB is empty. Would add periodic sync, token images, and market data.
 - **Testing** - No tests. Would add Jest, Supertest, Playwright.
-- **Observability** - No error tracking (Sentry), APM, or metrics.
+- **Observability** - No error tracking (Sentry), APM, or metrics. Logging uses synchronous `console.*` methods; production should use an async logger like Pino.
 - **Caching** - Redis for API responses.
 - **UI Polish** - Typography, animations, skeletons. Automatic ENS detection on wallet input. Maybe a seperate portfolio page.
 - **API Docs** - Swagger UI for `/openapi.json`.
