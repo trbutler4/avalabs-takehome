@@ -333,7 +333,7 @@ export default function App() {
 																	<span>
 																		{copiedAddress === addr
 																			? "Copied!"
-																			: `${addr.slice(0, 6)}...${addr.slice(-4)}`}
+																			: `${addr.slice(0, 10)}...${addr.slice(-8)}`}
 																	</span>
 																	<svg
 																		xmlns="http://www.w3.org/2000/svg"
