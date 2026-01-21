@@ -337,7 +337,7 @@ export default function App() {
 														<TableCell className="text-muted-foreground">
 															{token.network_id}
 														</TableCell>
-														<TableCell className="font-mono text-xs text-muted-foreground">
+														<TableCell className="font-mono text-xs text-muted-foreground overflow-hidden">
 															{(() => {
 																const addr = token.contract_address;
 																if (!addr)
@@ -346,12 +346,10 @@ export default function App() {
 																	<button
 																		type="button"
 																		onClick={() => copyToClipboard(addr)}
-																		className="inline-flex items-center gap-1.5 group cursor-pointer"
+																		className="inline-flex items-center gap-1.5 group cursor-pointer max-w-full"
 																		title={`Copy ${addr}`}
 																	>
-																		<span>
-																			{`${addr.slice(0, 10)}...${addr.slice(-8)}`}
-																		</span>
+																		<span className="truncate">{addr}</span>
 																		{copiedAddress === addr ? (
 																			<CheckIcon
 																				aria-hidden="true"
