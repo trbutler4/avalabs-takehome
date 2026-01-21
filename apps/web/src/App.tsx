@@ -280,29 +280,54 @@ export default function App() {
 										<TableBody>
 											{tokensData?.tokens.map((token) => (
 												<TableRow key={`${token.id}-${token.network_id}`}>
-													<TableCell className="font-mono font-medium">
-														{token.symbol}
+													<TableCell className="font-mono font-medium max-w-[100px] uppercase">
+														<span
+															className="block truncate"
+															title={token.symbol}
+														>
+															{token.symbol}
+														</span>
 													</TableCell>
-													<TableCell>{token.name}</TableCell>
+													<TableCell className="max-w-[150px]">
+														<span className="block truncate" title={token.name}>
+															{token.name}
+														</span>
+													</TableCell>
 													<TableCell className="text-muted-foreground">
 														{token.network_id}
 													</TableCell>
 													<TableCell className="font-mono text-xs text-muted-foreground">
 														{(() => {
 															const addr = token.contract_address;
-															return addr ? (
+															if (!addr)
+																return <span className="italic">Native</span>;
+															return (
 																<button
 																	type="button"
 																	onClick={() => copyToClipboard(addr)}
-																	className="hover:text-foreground cursor-pointer transition-colors"
+																	className="inline-flex items-center gap-1.5 group cursor-pointer"
 																	title={`Copy ${addr}`}
 																>
-																	{copiedAddress === addr
-																		? "Copied!"
-																		: `${addr.slice(0, 10)}...`}
+																	<span>
+																		{copiedAddress === addr
+																			? "Copied!"
+																			: `${addr.slice(0, 6)}...${addr.slice(-4)}`}
+																	</span>
+																	<svg
+																		xmlns="http://www.w3.org/2000/svg"
+																		viewBox="0 0 20 20"
+																		fill="currentColor"
+																		aria-hidden="true"
+																		className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
+																	>
+																		<path
+																			fillRule="evenodd"
+																			d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.75a3.75 3.75 0 0 0-3.75-3.75H6V5.25a2.25 2.25 0 0 1 2.25-2.25h7.738Zm-2.54 9.012a2.25 2.25 0 0 0-2.199-1.774H6V13.5a2.25 2.25 0 0 0 2.25 2.25h4.5a2.25 2.25 0 0 0 2.25-2.25v-.476h-1.552Z"
+																			clipRule="evenodd"
+																		/>
+																		<path d="M2.25 7.5A2.25 2.25 0 0 1 4.5 5.25h5.25a2.25 2.25 0 0 1 2.25 2.25v6.75a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V7.5Z" />
+																	</svg>
 																</button>
-															) : (
-																<span className="italic">Native</span>
 															);
 														})()}
 													</TableCell>
