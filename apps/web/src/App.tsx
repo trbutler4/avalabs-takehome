@@ -351,12 +351,12 @@ export default function App() {
 																		{copiedAddress === addr ? (
 																			<CheckIcon
 																				aria-hidden="true"
-																				className="size-3.5 text-primary transition-opacity"
+																				className="size-5 text-primary transition-opacity"
 																			/>
 																		) : (
 																			<CopyIcon
 																				aria-hidden="true"
-																				className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
+																				className="size-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
 																			/>
 																		)}
 																	</button>
