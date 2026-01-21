@@ -1,6 +1,7 @@
 import type { Token } from "@repo/shared";
 import { isValidEvmAddress } from "@repo/shared/validation";
 import { useQuery } from "@tanstack/react-query";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,9 @@ const DEFAULT_DECIMALS = 18; // Standard for EVM native tokens and most ERC-20s
 const DISPLAY_DECIMALS = 6; // Max decimal places to show in UI
 const MIN_DISPLAY_THRESHOLD = "<0.00001"; // Shown when balance is non-zero but too small
 const PAGE_SIZE = 50;
+
+// Hoisted static array to avoid recreation on each render
+const SKELETON_ROWS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 function useDebouncedValue<T>(value: T, delay: number): T {
 	const [debouncedValue, setDebouncedValue] = useState(value);
@@ -275,7 +279,7 @@ export default function App() {
 							</div>
 						) : isLoading ? (
 							<output className="block space-y-3" aria-label="Loading tokens">
-								{[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+								{SKELETON_ROWS.map((n) => (
 									<div
 										key={n}
 										className="h-10 bg-muted animate-pulse rounded"
@@ -300,71 +304,80 @@ export default function App() {
 											</TableRow>
 										</TableHeader>
 										<TableBody>
-											{tokensData?.tokens.map((token) => (
-												<TableRow key={`${token.id}-${token.network_id}`}>
-													<TableCell className="font-mono font-medium max-w-[100px] uppercase">
-														<span
-															className="block truncate"
-															title={token.symbol}
-														>
-															{token.symbol}
-														</span>
+											{tokensData?.tokens.length === 0 ? (
+												<TableRow>
+													<TableCell
+														colSpan={wallet ? 5 : 4}
+														className="text-center text-muted-foreground py-8"
+													>
+														No tokens found
 													</TableCell>
-													<TableCell className="max-w-[150px]">
-														<span className="block truncate" title={token.name}>
-															{token.name}
-														</span>
-													</TableCell>
-													<TableCell className="text-muted-foreground">
-														{token.network_id}
-													</TableCell>
-													<TableCell className="font-mono text-xs text-muted-foreground">
-														{(() => {
-															const addr = token.contract_address;
-															if (!addr)
-																return <span className="italic">Native</span>;
-															return (
-																<button
-																	type="button"
-																	onClick={() => copyToClipboard(addr)}
-																	className="inline-flex items-center gap-1.5 group cursor-pointer"
-																	title={`Copy ${addr}`}
-																>
-																	<span>
-																		{copiedAddress === addr
-																			? "Copied!"
-																			: `${addr.slice(0, 10)}...${addr.slice(-8)}`}
-																	</span>
-																	<svg
-																		xmlns="http://www.w3.org/2000/svg"
-																		viewBox="0 0 20 20"
-																		fill="currentColor"
-																		aria-hidden="true"
-																		className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
-																	>
-																		<path
-																			fillRule="evenodd"
-																			d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.75a3.75 3.75 0 0 0-3.75-3.75H6V5.25a2.25 2.25 0 0 1 2.25-2.25h7.738Zm-2.54 9.012a2.25 2.25 0 0 0-2.199-1.774H6V13.5a2.25 2.25 0 0 0 2.25 2.25h4.5a2.25 2.25 0 0 0 2.25-2.25v-.476h-1.552Z"
-																			clipRule="evenodd"
-																		/>
-																		<path d="M2.25 7.5A2.25 2.25 0 0 1 4.5 5.25h5.25a2.25 2.25 0 0 1 2.25 2.25v6.75a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V7.5Z" />
-																	</svg>
-																</button>
-															);
-														})()}
-													</TableCell>
-													{wallet && (
-														<TableCell className="font-mono">
-															{formatBalance(token.balance, token.decimals)}
-														</TableCell>
-													)}
 												</TableRow>
-											))}
+											) : (
+												tokensData?.tokens.map((token) => (
+													<TableRow key={`${token.id}-${token.network_id}`}>
+														<TableCell className="font-mono font-medium max-w-[100px] uppercase">
+															<span
+																className="block truncate"
+																title={token.symbol}
+															>
+																{token.symbol}
+															</span>
+														</TableCell>
+														<TableCell className="max-w-[150px]">
+															<span
+																className="block truncate"
+																title={token.name}
+															>
+																{token.name}
+															</span>
+														</TableCell>
+														<TableCell className="text-muted-foreground">
+															{token.network_id}
+														</TableCell>
+														<TableCell className="font-mono text-xs text-muted-foreground">
+															{(() => {
+																const addr = token.contract_address;
+																if (!addr)
+																	return <span className="italic">Native</span>;
+																return (
+																	<button
+																		type="button"
+																		onClick={() => copyToClipboard(addr)}
+																		className="inline-flex items-center gap-1.5 group cursor-pointer"
+																		title={`Copy ${addr}`}
+																	>
+																		<span>
+																			{`${addr.slice(0, 10)}...${addr.slice(-8)}`}
+																		</span>
+																		{copiedAddress === addr ? (
+																			<CheckIcon
+																				aria-hidden="true"
+																				className="size-3.5 text-green-600 transition-opacity"
+																			/>
+																		) : (
+																			<CopyIcon
+																				aria-hidden="true"
+																				className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
+																			/>
+																		)}
+																	</button>
+																);
+															})()}
+														</TableCell>
+														{wallet && (
+															<TableCell className="font-mono">
+																{formatBalance(token.balance, token.decimals)}
+															</TableCell>
+														)}
+													</TableRow>
+												))
+											)}
 										</TableBody>
 									</Table>
 								</div>
 
-								<div className="flex gap-2 mt-4 items-center justify-between">
+								<div className="flex mt-4 items-center justify-between">
 									<Button
 										variant="outline"
 										size="sm"
@@ -373,12 +386,98 @@ export default function App() {
 									>
 										Previous
 									</Button>
-									<span className="text-xs sm:text-sm text-muted-foreground">
-										Page {page}
-									</span>
+									<div className="flex items-center gap-1">
+										{(() => {
+											const total = tokensData?.total ?? 0;
+											const totalPages = Math.ceil(total / PAGE_SIZE);
+											if (totalPages <= 1) {
+												return (
+													<span className="text-sm text-muted-foreground px-2">
+														Page 1 of 1
+													</span>
+												);
+											}
+
+											const showEllipsisStart = page > 4;
+											const showEllipsisEnd = page < totalPages - 3;
+
+											const items: React.ReactNode[] = [];
+
+											// Always show first page
+											items.push(
+												<Button
+													key={1}
+													variant={1 === page ? "default" : "ghost"}
+													size="sm"
+													onClick={() => setPage(1)}
+													className="w-9 h-9"
+												>
+													1
+												</Button>,
+											);
+
+											if (showEllipsisStart) {
+												items.push(
+													<span
+														key="ellipsis-start"
+														className="px-1 text-muted-foreground"
+													>
+														...
+													</span>,
+												);
+											}
+
+											// Pages around current
+											for (
+												let i = Math.max(2, page - 2);
+												i <= Math.min(totalPages - 1, page + 2);
+												i++
+											) {
+												items.push(
+													<Button
+														key={i}
+														variant={i === page ? "default" : "ghost"}
+														size="sm"
+														onClick={() => setPage(i)}
+														className="w-9 h-9"
+													>
+														{i}
+													</Button>,
+												);
+											}
+
+											if (showEllipsisEnd) {
+												items.push(
+													<span
+														key="ellipsis-end"
+														className="px-1 text-muted-foreground"
+													>
+														...
+													</span>,
+												);
+											}
+
+											// Always show last page
+											if (totalPages > 1) {
+												items.push(
+													<Button
+														key={totalPages}
+														variant={totalPages === page ? "default" : "ghost"}
+														size="sm"
+														onClick={() => setPage(totalPages)}
+														className="w-9 h-9"
+													>
+														{totalPages}
+													</Button>,
+												);
+											}
+
+											return items;
+										})()}
+									</div>
 									<Button
 										size="sm"
-										disabled={(tokensData?.tokens.length ?? 0) < 50}
+										disabled={(tokensData?.tokens.length ?? 0) < PAGE_SIZE}
 										onClick={() => setPage((p) => p + 1)}
 									>
 										Next
