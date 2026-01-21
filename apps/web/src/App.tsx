@@ -26,6 +26,7 @@ import { fetchAllTokens, fetchNetworks, fetchTokens } from "./api";
 const DEFAULT_DECIMALS = 18; // Standard for EVM native tokens and most ERC-20s
 const DISPLAY_DECIMALS = 6; // Max decimal places to show in UI
 const MIN_DISPLAY_THRESHOLD = "<0.00001"; // Shown when balance is non-zero but too small
+const PAGE_SIZE = 50;
 
 // Static header hoisted outside component to avoid recreation on each render
 const Header = (
@@ -138,7 +139,6 @@ export default function App() {
 
 	const debouncedSearch = useDebouncedValue(search, 200);
 	const walletIsValid = !wallet || isValidEvmAddress(wallet);
-	const pageSize = 50;
 
 	const {
 		data: networks,
@@ -178,7 +178,7 @@ export default function App() {
 				network_id: selectedNetwork === "all" ? undefined : selectedNetwork,
 				search: debouncedSearch || undefined,
 				page,
-				limit: pageSize,
+				limit: PAGE_SIZE,
 			}),
 		enabled: !wallet,
 	});
@@ -209,15 +209,15 @@ export default function App() {
 			return 4;
 		};
 
-		return filtered.sort(
+		return filtered.toSorted(
 			(a, b) => relevance(a) - relevance(b) || a.name.localeCompare(b.name),
 		);
 	}, [walletTokens, debouncedSearch]);
 
 	// Client-side pagination for wallet tokens
 	const paginatedWalletTokens = useMemo(() => {
-		const start = (page - 1) * pageSize;
-		return filteredWalletTokens.slice(start, start + pageSize);
+		const start = (page - 1) * PAGE_SIZE;
+		return filteredWalletTokens.slice(start, start + PAGE_SIZE);
 	}, [filteredWalletTokens, page]);
 
 	// Unified data for rendering
