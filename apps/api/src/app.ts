@@ -1,3 +1,4 @@
+import compression from "compression";
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
 import rateLimit from "express-rate-limit";
@@ -12,6 +13,7 @@ const RATE_LIMIT_MAX_REQUESTS = 100; // requests per window
 const app = express();
 
 app.use(helmet());
+app.use(compression());
 
 // Support multiple CORS origins (comma-separated in env)
 const corsOrigins = process.env.CORS_ORIGIN
@@ -56,6 +58,11 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use("/", routes);
+
+// Custom 404 handler - avoids Express fingerprinting
+app.use((_req, res) => {
+	res.status(404).json({ error: "Not found" });
+});
 
 // Global error handler - must be last
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
