@@ -59,6 +59,11 @@ app.get("/health", async (_req, res) => {
 
 app.use("/", routes);
 
+// Custom 404 handler - avoids Express fingerprinting
+app.use((_req, res) => {
+	res.status(404).json({ error: "Not found" });
+});
+
 // Global error handler - must be last
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 	console.error("Unhandled error:", err);
