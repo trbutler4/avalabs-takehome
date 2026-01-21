@@ -351,12 +351,12 @@ export default function App() {
 																		{copiedAddress === addr ? (
 																			<CheckIcon
 																				aria-hidden="true"
-																				className="size-5 text-primary transition-opacity"
+																				className="size-6 sm:size-5 text-primary transition-opacity"
 																			/>
 																		) : (
 																			<CopyIcon
 																				aria-hidden="true"
-																				className="size-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
+																				className="size-6 sm:size-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
 																			/>
 																		)}
 																	</button>
@@ -384,7 +384,7 @@ export default function App() {
 									>
 										Previous
 									</Button>
-									<div className="flex items-center gap-1">
+									<div className="hidden sm:flex items-center gap-1">
 										{(() => {
 											const total = tokensData?.total ?? 0;
 											const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -408,7 +408,7 @@ export default function App() {
 													variant={1 === page ? "default" : "ghost"}
 													size="sm"
 													onClick={() => setPage(1)}
-													className="w-9 h-9"
+													className="w-9"
 												>
 													1
 												</Button>,
@@ -437,7 +437,7 @@ export default function App() {
 														variant={i === page ? "default" : "ghost"}
 														size="sm"
 														onClick={() => setPage(i)}
-														className="w-9 h-9"
+														className="w-9"
 													>
 														{i}
 													</Button>,
@@ -463,7 +463,7 @@ export default function App() {
 														variant={totalPages === page ? "default" : "ghost"}
 														size="sm"
 														onClick={() => setPage(totalPages)}
-														className="w-9 h-9"
+														className="w-9"
 													>
 														{totalPages}
 													</Button>,
